@@ -1,0 +1,10 @@
+pruebas .json
+
+{
+    "rutaArchivo": "C:\\Users\\josue\\Documents\\LFP\\LFP-Vacas\\Lab_LFP\\proyecto1\\LFP_VD_2024_Proyecto1_202247844\\src\\pruebas.json"
+}
+
+pruebas .nlex
+{
+    "rutaArchivo": "C:\\Users\\josue\\Documents\\LFP\\LFP-Vacas\\Lab_LFP\\LFP_VD_2024_Proyecto2_202247844\\pruebas.nlex"
+}

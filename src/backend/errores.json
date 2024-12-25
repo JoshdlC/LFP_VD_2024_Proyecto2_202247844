@@ -1,0 +1,18 @@
+[
+  {
+    "numero": 1,
+    "valor": "Valor no reconocido",
+    "descripcion": "últiple",
+    "fila": 24,
+    "columna": 3,
+    "tipo": "error léxico"
+  },
+  {
+    "numero": 2,
+    "valor": "Valor no reconocido",
+    "descripcion": "ínea",
+    "fila": 24,
+    "columna": 6,
+    "tipo": "error léxico"
+  }
+]
