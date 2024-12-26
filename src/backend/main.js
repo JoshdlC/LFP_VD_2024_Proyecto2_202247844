@@ -12,6 +12,9 @@ const Error = require('./error');
 const Configuraciones = require('./configuraciones');
 const Operacion = require('./operacion');
 
+// const { analizadorLexico } = require('./analizadorLexico');
+// const analizadorSintactico  = require('./analizadorSinc');
+
 // Middleware
 app.use(express.json()); // Para analizar JSON en el cuerpo de la solicitud0
 app.use(express.text());
@@ -343,6 +346,29 @@ function analizadorLexico(texto) {
             contador++;
         }
 
+        //* Si es un comentario simple
+        else if (codigo === 47 && texto.charCodeAt(contador + 1) === 47) {
+            while (contador < texto.length && texto.charCodeAt(contador) !== 10) {
+                contador++;
+            }
+            fila++;
+            columna = 1;
+            contador++;
+        }
+
+        //* Si es un comentario de bloque
+        else if (codigo === 47 && texto.charCodeAt(contador + 1) === 42) {
+            contador += 2;
+            while (contador < texto.length && (texto.charCodeAt(contador) !== 42 || texto.charCodeAt(contador + 1) !== 47)) {
+                if (texto.charCodeAt(contador) === 10) {
+                    fila++;
+                    columna = 1;
+                }
+                contador++;
+            }
+            contador += 2;
+        }
+
         //* Si es un caracter no reconocido
         else {
             let valor = '';
@@ -365,14 +391,36 @@ function analizadorLexico(texto) {
     datosGlobalFile = textoSinErrores;
 }
 
-// Función para procesar operaciones
+
+function analizadorSintactico(textoSinErrores) {
+    let columna = 1;
+    let fila = 1;
+    let contador = 0;
+
+    let contadorLlaves = 0;
+    let contadorCorchetes = 0;
+    let contadorParentesis = 0;
+
+    console.log("");
+    console.log("Comenzando análisis sintáctico...");
+    console.log("");
+
+    while (contador < textoSinErrores.length) {
+        let codigo = textoSinErrores.charCodeAt(contador);
+
+        
+    }
+
+    
+}
+
+
+
 function procesarOperaciones(operacionesArray) {
     // Implementa la lógica para evaluar operaciones y almacenar resultados en operacionesArray.
 }
 
-function analizadorSintactico(textoSinErrores) {
-    
-}
+
 
 // Iniciar servidor
 app.listen(port, () => {
