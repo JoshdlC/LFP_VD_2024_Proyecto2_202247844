@@ -198,7 +198,7 @@ function analizadorLexico(texto) {
             continue;
         }
 
-        //* Si es un dígito
+        //? Si es un dígito
         else if (codigo >= 48 && codigo <= 57) {
             console.log("Es un número")
             let numero = '';
@@ -438,9 +438,15 @@ function analizadorSintactico(texto) {
     let contador = 0;
 
 
-    let contadorLlaves = 0;
-    let contadorCorchetes = 0;
-    let contadorParentesis = 0;
+    let contadorComas = 0;
+    let contadorCorchetesCierre = 0;
+    let contadorCorchetesApertura = 0;
+    let contadorParentesisCierre = 0;
+    let contadorParentesisApertura = 0;
+    let contadorLlavesCierre = 0;
+    let contadorLlavesApertura = 0;
+    let contadorComillasDobles = 0;
+    let tipoOperacion = ['resta', 'suma', 'multiplicacion', 'division', 'potencia', 'raiz', 'inverso', 'seno', 'coseno', 'tangente', 'mod'];
 
     operacionesFlag = false;
     const json = JSON.parse(texto);
@@ -456,10 +462,82 @@ function analizadorSintactico(texto) {
     while (contador < texto.length) {
         let codigo = texto.charCodeAt(contador);
 
-        if (codigo === 40){
-            contadorParentesis++;
+        if (codigo === 79){
+            while (codigo !== 32) {
+                contador++;
+                codigo = texto.charCodeAt(contador);
+                continue;
+            }
             
         }
+        else if (codigo === 32){
+            contador++;
+        }
+        else if (codigo === 91){
+            contador++;
+            contadorCorchetesApertura++;
+        }
+        else if (codigo === 93){
+            contadorCorchetesCierre++;
+            contador++;
+        }
+        else if (codigo === 40){
+            contadorParentesisApertura++;
+            contador++;
+        }
+        else if (codigo === 41){
+            contadorParentesisCierre++;
+            contador++;
+        }
+        else if (codigo === 123){
+            contadorLlavesApertura++;
+            contador++;
+        }
+        else if (codigo === 125){
+            contadorLlavesCierre++;
+            contador++;
+            
+        }
+        else if (codigo === 44){
+            contadorComas++;
+            contador++;
+        }
+
+        else if (codigo === 34){
+            contadorComillasDobles++;
+            contador++;
+        }
+    }
+
+
+    if (contadorCorchetesApertura >= contadorCorchetesCierre){
+        console.log("Error de sintaxis: Falta un corchete de cierre");
+        errores.push(new Error('Falta un corchete de cierre', ']', 'N/A', 'N/A', 'Error sintáctico'));
+    }
+    if (contadorCorchetesApertura <= contadorCorchetesCierre){
+        console.log("Error de sintaxis: Falta un corchete de apertura");
+        errores.push(new Error('Falta un corchete de apertura', '[', 'N/A', 'N/A', 'Error sintáctico'));
+    }
+    if (contadorParentesisApertura >= contadorParentesisCierre){
+        console.log("Error de sintaxis: Falta un paréntesis de cierre");
+        errores.push(new Error('Falta un paréntesis de cierre', ')', 'N/A', 'N/A', 'Error sintáctico'));
+    }
+    if (contadorParentesisApertura <= contadorParentesisCierre){
+        console.log("Error de sintaxis: Falta un paréntesis de apertura");
+        errores.push(new Error('Falta un paréntesis de apertura', '(', 'N/A', 'N/A', 'Error sintáctico'));
+    }
+    if (contadorLlavesApertura >= contadorLlavesCierre){
+        console.log("Error de sintaxis: Falta una llave de cierre");
+        errores.push(new Error('Falta una llave de cierre', '}', 'N/A', 'N/A', 'Error sintáctico'));
+    }
+    if (contadorLlavesApertura <= contadorLlavesCierre){
+        console.log("Error de sintaxis: Falta una llave de apertura");
+        errores.push(new Error('Falta una llave de apertura', '{', 'N/A', 'N/A', 'Error sintáctico'));
+    }
+        
+    if (contadorComillasDobles % 2 !== 0){
+        console.log("Error de sintaxis: Falta una comilla doble");
+        errores.push(new Error('Falta una comilla doble', '"', 'N/A', 'N/A', 'Error sintáctico'));
     }
 
     
