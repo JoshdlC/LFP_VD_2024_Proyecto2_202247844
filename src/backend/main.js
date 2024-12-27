@@ -75,6 +75,7 @@ app.post('/analizarTexto', (req, res) => {
         errores = []; // Reiniciar errores
 
         analizadorLexico(datosGlobalFile);
+        console.log(textoSinErrores);
         res.status(200).json({ message: 'Análisis completado', lexemas, errores });
     } catch (error) {
         res.status(500).json({ error: 'Error al analizar texto', detalles: error.message });
@@ -110,6 +111,16 @@ app.post('/realizarOperaciones', (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Error al realizar operaciones', detalles: error.message });
     }
+});
+
+
+app.post('/generarReportes', (req, res) => {
+    if (lexemas.length === 0 && errores.length === 0) {
+        return res.status(400).json({ error: 'No se han realizado análisis léxicos' });
+    }
+
+    generarReportesHTML();
+    res.status(200).json({ message: 'Reportes generados correctamente' });
 });
 
 app.get('/', (req, res) => {
@@ -216,16 +227,26 @@ function analizadorLexico(texto) {
         }
 
         //? Si es un operador
-        else if (codigo === 43 || codigo === 45 || codigo === 42 || codigo === 47)   {
-            lexemas.push(new Lexema('Operador', texto[contador], fila));
-            textoSinErrores += texto[contador];
-            columna++;
-            contador++;
-        }
+        // else if (codigo === 43 || codigo === 45 )   {
+        //     lexemas.push(new Lexema('Operador', texto[contador], fila));
+        //     textoSinErrores += texto[contador];
+        //     columna++;
+        //     contador++;
+        // }
+
+        // //* Si es un diagonal Se ignora por ser un comentario
+        // else if (codigo === 47) {
+            
+        //     textoSinErrores += texto[contador];
+        //     columna++;
+        //     contador++;
+        // }
+
+
 
         //* Si es un paréntesis de apertura
         else if (codigo === 40) {
-            lexemas.push(new Lexema('Paréntesis de apertura', texto[contador], fila));
+            lexemas.push(new Lexema('Paréntesis de apertura', texto[contador], fila, columna));
             textoSinErrores += texto[contador];
             columna++;
             contador++;
@@ -357,7 +378,7 @@ function analizadorLexico(texto) {
         }
 
         //* Si es un comentario de bloque
-        else if (codigo === 47 && texto.charCodeAt(contador + 1) === 42) {
+        else if ((codigo === 47 && texto.charCodeAt(contador + 1) === 42) || (codigo === 42 && texto.charCodeAt(contador + 1) === 47)) {
             contador += 2;
             while (contador < texto.length && (texto.charCodeAt(contador) !== 42 || texto.charCodeAt(contador + 1) !== 47)) {
                 if (texto.charCodeAt(contador) === 10) {
@@ -368,6 +389,8 @@ function analizadorLexico(texto) {
             }
             contador += 2;
         }
+        /*
+        */
 
         //* Si es un caracter no reconocido
         else {
@@ -392,7 +415,7 @@ function analizadorLexico(texto) {
 }
 
 
-function analizadorSintactico(textoSinErrores) {
+function analizadorSintactico(texto) {
     let columna = 1;
     let fila = 1;
     let contador = 0;
@@ -405,8 +428,8 @@ function analizadorSintactico(textoSinErrores) {
     console.log("Comenzando análisis sintáctico...");
     console.log("");
 
-    while (contador < textoSinErrores.length) {
-        let codigo = textoSinErrores.charCodeAt(contador);
+    while (contador < texto.length) {
+        let codigo = texto.charCodeAt(contador);
 
         
     }
@@ -419,6 +442,129 @@ function analizadorSintactico(textoSinErrores) {
 function procesarOperaciones(operacionesArray) {
     // Implementa la lógica para evaluar operaciones y almacenar resultados en operacionesArray.
 }
+
+
+function generarReportesHTML() {
+    
+    let html = `
+        <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Reporte de análisis léxico</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        padding: 20px;
+                        text-align: center;
+                        background-color: #66ac63;
+                        color: #ffffff;
+                    }
+                    h1, h2 {
+                        color: #ffffff;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                        background-color: #ffffff;
+                        color: #333333;
+                    }
+                    th, td {
+                        padding: 10px;
+                        border: 1px solid #dddddd;
+                        text-align: center;
+                    }
+                    th {
+                        background-color: #4caf50;
+                        color: white;
+                        font-weight: bold;
+                    }
+                    tr:nth-child(even) {
+                        background-color: #f2f2f2;
+                    }
+                    tr:hover {
+                        background-color: #ddd;
+                    }
+                </style>
+            </head>
+            <body style="font-family: Arial; padding: 20px; text-align: center; background-color:rgb(102, 172, 99);">
+                <h1>Reporte de análisis léxico</h1>
+                <h2>Lexemas encontrados:</h2>
+                <table border="1" style="width: 100%; text-align: center;">
+                    <tr>
+                        <th>#</th>
+                        <th>Tipo</th>
+                        <th>Valor</th>
+                        <th>Linea</th>
+                        <th>Columna</th>
+                    </tr>
+    `;
+    lexemas.forEach((lexema, index) => {
+        html += `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${lexema.tipo}</td>
+                <td>${lexema.valor}</td>
+                <td>${lexema.fila}</td>
+                <td>${lexema.columna}</td>
+            </tr>
+        `;
+    });
+    html += `
+                </table>
+    `;
+
+    if (errores.length > 0) {
+        html += `
+            <h2>Errores encontrados:</h2>
+            <table border="1" style="width: 100%; text-align: center;">
+                <tr>
+                    <th>#</th>
+                    <th>Valor</th>
+                    <th>Descripción</th>
+                    <th>Fila</th>
+                </tr>
+        `;
+        errores.forEach((error, index) => {
+            html += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${error.valor}</td>
+                    <td>${error.descripcion}</td>
+                    <td>${error.fila}</td>
+                </tr>
+            `;
+        });
+        html += `
+            </table>
+        `;
+    } else {
+        html += `
+            <h2>No se encontraron errores.</h2>
+        `;
+    }
+
+    html += `
+            </body>
+        </html>
+    `;
+
+    // Guardamos el código HTML en un archivo
+    fs.writeFile('reporte.html', html, (error) => {
+        if (error) {
+            console.log('Error al generar el reporte HTML');
+        } else {
+            console.log()
+            console.log('Reporte HTML generado correctamente');
+            console.log()
+
+            //? Generar imagen con graphviz
+            // generarReportesGraphviz();
+            // menu();
+        }
+    });
+}
+
 
 
 
