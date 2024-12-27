@@ -1,6 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const bodyParser = require('body-parser');
+const multer = require('multer');
 
 const app = express();
 const port = 3000;
@@ -17,7 +18,7 @@ const Operacion = require('./operacion');
 
 // Middleware
 app.use(express.json()); // Para analizar JSON en el cuerpo de la solicitud0
-app.use(express.text());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 // Habilitar CORS para todas las rutas
 app.use(cors());
@@ -30,39 +31,55 @@ let errores = [];
 let operacionesArray = [];
 let textoSinErrores = '';
 
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/');
+    },
+    filename: (req, file, cb) => {
+        cb(null, file.originalname);
+    },
+});
+const upload = multer({ storage });
 
 let letrasTilde = [160, 130, 161, 162, 163, 181, 144, 214, 224, 233]; //? letras con tilde en ASCII
 
 // Endpoint para cargar archivo
-app.post('/cargarArchivo', (req, res) => {
-    const { rutaArchivo } = req.body;
-    console.log(rutaArchivo)
+app.post('/cargarArchivo', upload.single('file'), (req, res) => {
+    // const { rutaArchivo } = req.body;
+    // console.log(rutaArchivo)
 
-    if (!rutaArchivo) {
-        return res.status(400).json({ 
-            error: 'La ruta del archivo no fue proporcionada. Asegúrate de enviar un campo rutaArchivo en el cuerpo de la solicitud.', 
-        });
+    // if (!rutaArchivo) {
+    //     return res.status(400).json({ 
+    //         error: 'La ruta del archivo no fue proporcionada. Asegúrate de enviar un campo rutaArchivo en el cuerpo de la solicitud.', 
+    //     });
+    // }
+
+    // try {
+    //     //* Leer el archivo como texto sin importar la extensión
+    //     const datos = fs.readFileSync(rutaArchivo, 'utf-8');
+
+    //     //* Guardar los datos globalmente
+    //     datosGlobalFile = datos;
+    //     datosGlobalString = datos; //* No es necesario convertir a JSON si es un texto plano.
+
+    //     res.status(200).json({ 
+    //         message: 'Archivo cargado exitosamente', 
+    //         contenido: datos 
+    //     });
+    // } catch (error) {
+    //     res.status(500).json({ 
+    //         error: 'Error al leer el archivo', 
+    //         detalles: error.message 
+    //     });
+    // }
+    const file = req.file;
+    if (!file) {
+        return res.status(400).json({ error: 'No se proporcionó ningún archivo.' });
     }
-
-    try {
-        //* Leer el archivo como texto sin importar la extensión
-        const datos = fs.readFileSync(rutaArchivo, 'utf-8');
-
-        //* Guardar los datos globalmente
-        datosGlobalFile = datos;
-        datosGlobalString = datos; //* No es necesario convertir a JSON si es un texto plano.
-
-        res.status(200).json({ 
-            message: 'Archivo cargado exitosamente', 
-            contenido: datos 
-        });
-    } catch (error) {
-        res.status(500).json({ 
-            error: 'Error al leer el archivo', 
-            detalles: error.message 
-        });
-    }
+    res.status(200).json({ message: 'Archivo cargado exitosamente', file });
 });
+
+
 
 // Endpoint para analizar archivo
 app.post('/analizarTexto', (req, res) => {
@@ -104,7 +121,7 @@ app.post('/realizarOperaciones', (req, res) => {
 
     try {
         const json = JSON.parse(datosGlobalFile);
-        operacionesArray = [];
+
 
         procesarOperaciones(json.operaciones);
         res.status(200).json({ message: 'Operaciones realizadas correctamente', operaciones: operacionesArray });
@@ -402,7 +419,7 @@ function analizadorLexico(texto) {
             }
             if (!palabrasReservadas.includes(valor)) {
                 columna++;
-                errores.push(new Error('Valor no reconocido', valor, fila, columna));
+                errores.push(new Error('Valor no reconocido', valor, fila, columna, 'Error léxico'));
             } else {
                 columna++;
                 textoSinErrores += valor;
@@ -420,9 +437,17 @@ function analizadorSintactico(texto) {
     let fila = 1;
     let contador = 0;
 
+
     let contadorLlaves = 0;
     let contadorCorchetes = 0;
     let contadorParentesis = 0;
+
+    operacionesFlag = false;
+    const json = JSON.parse(texto);
+    if (!json.Operaciones) {
+        console.log('No se encontró la clave operaciones en el archivo JSON');
+        return;
+    }
 
     console.log("");
     console.log("Comenzando análisis sintáctico...");
@@ -431,7 +456,10 @@ function analizadorSintactico(texto) {
     while (contador < texto.length) {
         let codigo = texto.charCodeAt(contador);
 
-        
+        if (codigo === 40){
+            contadorParentesis++;
+            
+        }
     }
 
     
@@ -523,6 +551,7 @@ function generarReportesHTML() {
                     <th>Valor</th>
                     <th>Descripción</th>
                     <th>Fila</th>
+                    <th>Columna</th>
                 </tr>
         `;
         errores.forEach((error, index) => {

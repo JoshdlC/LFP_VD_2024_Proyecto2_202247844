@@ -1,5 +1,5 @@
 class Error {
-    constructor(valor, descripcion, fila, columna) {
+    constructor(valor, descripcion, fila, columna, tipo) {
         this.valor = valor;
         this.descripcion = descripcion;
         this.fila = fila
