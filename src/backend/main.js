@@ -77,6 +77,13 @@ app.post('/cargarArchivo', upload.single('file'), (req, res) => {
         return res.status(400).json({ error: 'No se proporcionó ningún archivo.' });
     }
     res.status(200).json({ message: 'Archivo cargado exitosamente', file });
+
+    fs.readFile(file.path, 'utf-8', (error, data) => {
+        if (error) {
+            return res.status(500).json({ error: 'Error al leer el archivo', detalles: error.message });
+        }
+        datosGlobalFile = data;
+    });
 });
 
 
@@ -86,12 +93,13 @@ app.post('/analizarTexto', (req, res) => {
     if (!datosGlobalFile) {
         return res.status(400).json({ error: 'No hay archivo cargado para analizar' });
     }
-
+    console.log('Analizando archivo...');
     try {
         lexemas = []; // Reiniciar lexemas
         errores = []; // Reiniciar errores
 
         analizadorLexico(datosGlobalFile);
+        // generarReportesHTML();
         console.log(textoSinErrores);
         res.status(200).json({ message: 'Análisis completado', lexemas, errores });
     } catch (error) {
@@ -142,6 +150,16 @@ app.post('/generarReportes', (req, res) => {
 
 app.get('/', (req, res) => {
     res.status(200).json({ message: 'Servidor en línea, Bienvenido a NodeLex' });
+});
+
+
+app.post('/generarErrores', (req, res) => {
+    if (errores.length === 0) {
+        return res.status(200).json({ message: 'No se encontraron errores léxicos' });
+    }
+
+    archivoErrores();
+    res.status(200).json({ message: 'Archivo de errores generado correctamente' });
 });
 
 //! Analizador léxico   
@@ -502,7 +520,7 @@ function analizadorSintactico(texto) {
             contadorComas++;
             contador++;
         }
-
+        //* Comillas dobles 
         else if (codigo === 34){
             contadorComillasDobles++;
             contador++;
@@ -549,7 +567,7 @@ function procesarOperaciones(operacionesArray) {
     // Implementa la lógica para evaluar operaciones y almacenar resultados en operacionesArray.
 }
 
-
+//! FUNCION NO IMPORTANTE, SE GENERAN LAS TABLAS DESDE HOMEPAGE.JSX
 function generarReportesHTML() {
     
     let html = `
@@ -672,7 +690,29 @@ function generarReportesHTML() {
     });
 }
 
+function archivoErrores(){
+    console.log("Generando archivo de errores...");
 
+    let archivo = fs.createWriteStream('errores.json', {
+        flags: 'w'
+    })
+
+    // ! REVISAR CODIGO
+    // let erroresDuplicados = [...errores];
+    // for (let i = 0; i < erroresDuplicados.length; i++){
+    //     errores.push(erroresDuplicados[i]);
+    // }
+
+    // archivo.write(JSON.stringify(errores, null, 2)); 
+    // archivo.end();
+
+    let erroresConTipo = errores.map((error, index) => {
+        return {numero: index + 1, ...error, tipo: "error lexico" };
+    });
+
+    archivo.write(JSON.stringify(erroresConTipo, null, 2)); 
+    archivo.end();
+}
 
 
 // Iniciar servidor

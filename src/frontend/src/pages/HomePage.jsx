@@ -4,11 +4,22 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 
 function HomePage() {
-
+  //* pone el archivo
   const [file, setFile] = useState(null);
+  const [fileContent, setFileContent] = useState('');
+  const [analysisResult, setAnalysisResult] = useState(null);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [outputContent, setOutputContent] = useState('');
 
   const handleFileChange = (event) => {
-    setFile(event.target.files[0]);
+    const selectedFile = event.target.files[0];
+    setFile(selectedFile);
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setFileContent(e.target.result);
+    };
+    reader.readAsText(selectedFile);
   };
 
   const handleFileUpload = async () => {
@@ -28,6 +39,27 @@ function HomePage() {
       console.error('Error uploading file:', error);
     }
   };
+
+  const handleAnalyze = async () => {
+    try {
+      const response = await axios.post('http://localhost:3000/analizarTexto');
+      setAnalysisResult(response.data);
+    } catch (error) {
+      console.error('Error analyzing text:', error);
+    }
+  };
+
+  const handleErrorsJson = async () => {
+    try {
+      const response = await axios.post('http://localhost:3000/generarErrores');
+      console.log(response.data);
+    } catch (error) {
+      console.error('Error analyzing text:', error);
+      setErrorMessage('Error generating errors JSON');
+
+    }
+  };
+
   return (
     <main className="homepage-main">
       <div className="homepage-title">
@@ -41,24 +73,87 @@ function HomePage() {
         <button className="button" onClick={handleFileUpload}>
           Subir Archivo
         </button>
-        <Link to="/analizar" className="button">
+        <button className="button" onClick={handleAnalyze}>
           Analizar
-        </Link>
+        </button>
         <Link to="/generarReportes" className="button">
           Generar Reportes
         </Link>
-        <Link to="/generarErrores" className="button">
+        <button className="button" onClick={handleErrorsJson}>
           Generar Archivo Errores
-        </Link>
+        </button>
       </div>
+      {errorMessage && <p className="error-message">{errorMessage}</p>}
+
       <br></br>
       <div className='homepage-textarea'>
-        <textarea>
-
+        <textarea 
+        name='textAreaEntrada' 
+        id='textAreaEntrada'
+        value={fileContent}
+        readOnly>
         </textarea>
-        <textarea>
+        
+        <textarea name='textAreaSalida' id='textAreaSalida'
+        disabled>
           
         </textarea>
+      </div>
+      <div className='homepage-analysis'>
+        {analysisResult && (
+          <div >
+            <h2>Resultado del análisis</h2>
+            <table border="1">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Tipo</th>
+                <th>Valor</th>
+                <th>Fila</th>
+                <th>Columna</th>
+              </tr>
+            </thead>
+            <tbody>
+              {analysisResult.lexemas.map((lexema, index) => (
+                <tr key={index}>
+                  <td>{index + 1}</td>
+                  <td>{lexema.tipo}</td>
+                  <td>{lexema.valor}</td>
+                  <td>{lexema.fila}</td>
+                  <td>{lexema.columna}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {analysisResult.errores.length > 0 && (
+            <>
+              <h2>Errores Encontrados</h2>
+              <table border="1">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Valor</th>
+                    <th>Descripción</th>
+                    <th>Fila</th>
+                    <th>Columna</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {analysisResult.errores.map((error, index) => (
+                    <tr key={index}>
+                      <td>{index + 1}</td>
+                      <td>{error.valor}</td>
+                      <td>{error.descripcion}</td>
+                      <td>{error.fila}</td>
+                      <td>{error.columna}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
+          </div>
+        )}
       </div>
     </main>
   );
