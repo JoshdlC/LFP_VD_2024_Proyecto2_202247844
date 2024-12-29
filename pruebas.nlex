@@ -6,7 +6,7 @@ Operaciones = [
 ]
 
 ConfiguracionesLex = [
-    fondo: "#000000",
+    fondo: "#285898",
     fuente: "#FFFFFF",
     forma: "circle",
     tipoFuente: "Times-Roman"

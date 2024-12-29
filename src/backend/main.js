@@ -34,6 +34,7 @@ let textoSinErrores = '';
 let configuraciones = {};
 let configLex = [];
 let configPar = [];
+let operacionesGlobal = [];
 
 let contadorComas = 0;
 let contadorCorchetesCierre = 0;
@@ -89,10 +90,11 @@ app.post('/analizarTexto', (req, res) => {
         analizadorLexico(datosGlobalFile);
         // generarReportesHTML();
         // analizadorSintactico(textoSinErrores);
-        realizarOps();
+        
         console.log(textoSinErrores);
         res.status(200).json({ message: 'Análisis completado', lexemas, errores });
     } catch (error) {
+        console.error('Error al analizar texto:', error);
         res.status(500).json({ error: 'Error al analizar texto', detalles: error.message });
     }
 });
@@ -111,23 +113,7 @@ app.post('/generarErrores', (req, res) => {
     res.status(200).json({ message: 'Archivo de errores generado', errores: erroresConTipo });
 });
 
-// Endpoint para realizar operaciones
-app.post('/realizarOperaciones', (req, res) => {
-    if (!datosGlobalFile) {
-        return res.status(400).json({ error: 'No hay archivo cargado para realizar operaciones' });
-    }
 
-    try {
-        const operacionesArray = parseOperaciones(datosGlobalFile);
-
-        procesarOperaciones(operacionesArray);
-
-        // procesarOperaciones(json.operaciones);
-        res.status(200).json({ message: 'Operaciones realizadas correctamente', operaciones: operacionesArray });
-    } catch (error) {
-        res.status(500).json({ error: 'Error al realizar operaciones', detalles: error.message });
-    }
-});
 
 
 app.post('/generarReportes', (req, res) => {
@@ -148,14 +134,7 @@ app.get('/', (req, res) => {
 });
 
 
-app.post('/generarErrores', (req, res) => {
-    if (errores.length === 0) {
-        return res.status(200).json({ message: 'No se encontraron errores léxicos' });
-    }
 
-    archivoErrores();
-    res.status(200).json({ message: 'Archivo de errores generado correctamente' });
-});
 
 //! Analizador léxico   
 function analizadorLexico(texto) {
@@ -479,11 +458,29 @@ function analizadorLexico(texto) {
             console.log('Data del archivo: \n', data);
             try {
                 analizadorSintactico(data);
+                console.log('Archivo limpio cerrado');
+                console.log('Terminaron los analizadores');
+                console.log('Análisis completado');
+                // console.log('Realizando operaciones...');
+                realizarOps();
+                if (operacionesGlobal.length === 0) {
+                    console.log('-'.repeat(50));
+                    console.log('No se encontraron operaciones');
+                    console.log('-'.repeat(50));
+                } else {
+                    console.log('-'.repeat(50));
+                    console.log('Operaciones encontradas:');
+                    console.log(operacionesGlobal);
+                    console.log('-'.repeat(50));
+                }
             } catch (error) {
                 console.log(error);
             }
         });
+        
+        console.log('Archivo limpio cerradox2');
     });
+    console.log('Archivo limpio cerradox3');
     
 }
 
@@ -761,7 +758,9 @@ function analizadorSintactico(texto) {
         errores.push(new Error('Falta una comilla doble', '"', 'N/A', 'N/A', 'Error sintáctico'));
     }
 
-    
+    console.log('Analisís sintáctico completado');
+    console.log("-".repeat(50));
+    return;
 }
 
 
@@ -1063,115 +1062,139 @@ function archivoErrores(){
 }
 
 function evaluarOperacion(operacion) {
-
-    // //* Revisa si los valores son operaciones anidadas, si lo son se evaluan de nuevo
-    // if (Array.isArray(operacion.valor1)) {
-    //     operacion.valor1 = evaluarOperacion(operacion.valor1[0]);
-    // }
-    // if (Array.isArray(operacion.valor2)) {
-    //     operacion.valor2 = evaluarOperacion(operacion.valor2[0]);
-    // }
+    let valor1 = evaluarValor(operacion.valor1);
+    let valor2 = operacion.valor2 !== undefined ? evaluarValor(operacion.valor2) : undefined;
 
     let resultado;
-    switch (operacion.operacion) {  //! Se utilizan varios || para asegurarse que se esta utilizando el valor correcto
+    switch (operacion.operacion) {
         case 'suma':
-            resultado = operacion.valor1.resultado || operacion.valor1 + (operacion.valor2.resultado || operacion.valor2);
+            resultado = valor1 + valor2;
             break;
         case 'resta':
-            resultado = operacion.valor1.resultado || operacion.valor1 - (operacion.valor2.resultado || operacion.valor2);
+            resultado = valor1 - valor2;
             break;
         case 'multiplicacion':
-            resultado = operacion.valor1.resultado || operacion.valor1 * (operacion.valor2.resultado || operacion.valor2);
+            resultado = valor1 * valor2;
             break;
         case 'division':
-            resultado = operacion.valor1.resultado || operacion.valor1 / (operacion.valor2.resultado || operacion.valor2);
+            resultado = valor1 / valor2;
             break;
         case 'potencia':
-            resultado = Math.pow(operacion.valor1.resultado || operacion.valor1, operacion.valor2.resultado || operacion.valor2);
+            resultado = Math.pow(valor1, valor2);
             break;
         case 'raiz':
-            resultado = Math.pow(operacion.valor1.resultado || operacion.valor1, 1 / (operacion.valor2.resultado || operacion.valor2));
-            break;
-        case 'inverso':
-            resultado = 1 / (operacion.valor1.resultado || operacion.valor1);
+            resultado = Math.pow(valor1, 1 / valor2);
             break;
         case 'seno':
-            resultado = Math.sin((operacion.valor1.resultado || operacion.valor1)); 
+            resultado = Math.sin(valor1);
             break;
-        case 'coseno':	
-            resultado = Math.cos((operacion.valor1.resultado || operacion.valor1)); 
+        case 'coseno':
+            resultado = Math.cos(valor1);
             break;
         case 'tangente':
-            resultado = Math.tan((operacion.valor1.resultado || operacion.valor1)); 
+            resultado = Math.tan(valor1);
             break;
         case 'mod':
-            resultado = (operacion.valor1.resultado || operacion.valor1) % (operacion.valor2.resultado || operacion.valor2);
+            resultado = valor1 % valor2;
             break;
         default:
             resultado = 'Operación no válida';
     }
-    return { ...operacion, resultado:resultado.toString() };
+
+    return { ...operacion, resultado };
 }
 
 
-function procesarOperaciones(operacionesArray) {+
-    // * itera sobre todas las operaciones, evaluando cada una a revision.
-    operacionesArray.forEach(operacion => {
-        operacion.valor1 = evaluarValor(operacion.valor1);
-        operacion.valor2 = evaluarValor(operacion.valor2);
-        operacion.resultado = evaluarOperacion(operacion);
-        console.log(`Operación: ${operacion.operacion}, Valor1: ${operacion.valor1}, Valor2: ${operacion.valor2}, Resultado: ${operacion.resultado}`);
+function procesarOperaciones(operacionesArray) {
+    operacionesGlobal = operacionesArray.map(operacion => {
+        const resultadoOperacion = evaluarOperacion(operacion);
+        console.log(`Operación: ${resultadoOperacion.operacion}, Valor1: ${resultadoOperacion.valor1}, Valor2: ${resultadoOperacion.valor2}, Resultado: ${resultadoOperacion.resultado}`);
+        return resultadoOperacion; // Agrega el resultado de la operación
     });
+    return operacionesGlobal; // Retorna las operaciones procesadas
 }
 
 function evaluarValor(valor) {
     if (Array.isArray(valor)) {
-        return procesarOperaciones(valor);
+        return procesarOperaciones(valor).map(op => op.resultado); // Procesa arreglos de operaciones anidadas y retorna los resultados
+    } else if (typeof valor === 'object') {
+        return evaluarOperacion(valor).resultado; // Evalúa operaciones anidadas
     } else {
-        return valor;
+        return valor; // Retorna directamente el valor si es un número
     }
 }
 
-function realizarOps(){
-    console.log("Realizando operaciones...");
-    const data = fs.readFileSync('pruebas.nlex', 'utf8');
-    const operacionesMatch = data.match(/Operaciones\s*=\s*\[(.*?)\]/s);
-    if (operacionesMatch) {
-        const operacionesStr = operacionesMatch[1].trim();
-        const operacionesArray = parseOperaciones(operacionesStr);
-        procesarOperaciones(operacionesArray);
+
+function realizarOps() {
+    try {
+        console.log("Realizando operaciones...");
+        const data = fs.readFileSync('archivoLimpio.nlex', 'utf8');
+        const operacionesMatch = data.match(/Operaciones\s*=\s*\[(.*?)\]/s);
+
+        if (operacionesMatch) {
+            const operacionesStr = operacionesMatch[1].trim();
+            const operacionesArray = parseOperacionesPersonalizado(operacionesStr);
+            operacionesGlobal = procesarOperaciones(operacionesArray); // Guarda las operaciones procesadas
+            console.log("Resultados de las operaciones:", operacionesGlobal);
+        } else {
+            console.log("No se encontraron operaciones en el archivo.");
+        }
+    } catch (error) {
+        console.error("Error al procesar las operaciones:", error);
     }
-    
-    console.log('Operaciones realizadas correctamente');
-    console.log('--------------------------------------');
-    console.log('Operaciones: ', operacionesArray);
 }
 
-function parseOperaciones(operacionesStr) {
+function parseOperacionesPersonalizado(operacionesStr) {
     const operacionesArray = [];
-    const operaciones = operacionesStr.split('},').map(op => op.trim() + '}');
-    operaciones.forEach(op => {
-        const operacion = parseOperacion(op);
+    const regex = /{[^{}]*}/g; // Extrae objetos delimitados por llaves
+    let match;
+
+    while ((match = regex.exec(operacionesStr)) !== null) {
+        const operacion = parseOperacionPersonalizada(match[0].trim());
         operacionesArray.push(operacion);
-    });
+    }
+
     return operacionesArray;
 }
 
-function parseOperacion(operacionStr) {
+function parseOperacionPersonalizada(operacionStr) {
     const operacion = {};
-    const regex = /(\w+):\s*([^,}]+)/g;
+    const regex = /"(\w+)":\s*(\[[^\]]*\]|\{[^}]*\}|[^,{}]+)/g; // Captura pares clave-valor, incluyendo anidados
     let match;
+
     while ((match = regex.exec(operacionStr)) !== null) {
-        operacion[match[1]] = match[2].trim();
+        const key = match[1];
+        let value = match[2].trim();
+
+        // Verifica si el valor es un arreglo o un objeto anidado
+        if (value.startsWith('[') && value.endsWith(']')) {
+            value = parseOperacionesPersonalizado(value.slice(1, -1));
+        } else if (value.startsWith('{') && value.endsWith('}')) {
+            value = parseOperacionPersonalizada(value.slice(1, -1));
+        } else if (!isNaN(parseFloat(value))) {
+            value = parseFloat(value); // Convierte números
+        } else {
+            value = value.replace(/"/g, ''); // Remueve comillas de cadenas
+        }
+
+        operacion[key] = value; // Asigna la clave y el valor al objeto
     }
+
     return operacion;
 }
 
-//? HAY Q MODIFICAR ESTO, NO SIRVE SOLO ASI
+
+//? Ya sirve, nomas es de mandar bien las operaciones
 function generarReportesGraphviz(){
     console.log("Generando reportes Graphviz...");
-    const data = fs.readFileSync('pruebas.nlex', 'utf8');
+    if (operacionesGlobal.length === 0) {
+        console.log("No se encontraron operaciones.");
+        return;
+    }
+    
+    const data = fs.readFileSync('archivoLimpio.nlex', 'utf8');
     const configuracionesMatch = data.match(/ConfiguracionesLex\s*=\s*\[(.*?)\]/s);
+    /*
     let fondo = "#ffffff";
     let fuenteColor = "#000000";
     let forma = "ellipse";
@@ -1184,89 +1207,92 @@ function generarReportesGraphviz(){
         fuenteColor = configuraciones.fuente || fuenteColor;
         forma = configuraciones.forma || forma;
         tipoFuente = configuraciones.tipoFuente || tipoFuente;
-    }
+    }*/
+    console.log('Configuraciones Lex: ', configLex);
+    forma = configLex[0].forma;
+    console.log('Forma: ', forma);
+    fondo = configLex[0].fondo;
+    console.log('Fondo: ', fondo);
+    fuenteColor = configLex[0].fuente;
+    console.log('Fuente: ', fuenteColor);
+    tipoFuente = configLex[0].tipoFuente;
+    console.log('Tipo de Fuente: ', tipoFuente);
+    try {
+        
+        let dot = `digraph G { 
+        node [shape=${forma}];
+        node [style=filled];
+        node [fillcolor=${fondo}];
+        node [fontcolor=${fuenteColor}];
+        node [fontname=${tipoFuente}];
+        edge [color="#000000"];
+        rankdir=TB;
+        `;
 
-    const operacionesMatch = data.match(/Operaciones\s*=\s*\[(.*?)\]/s);
-    if (!operacionesMatch) {
-        console.log("No se encontraron operaciones.");
-        return;
-    }
+        let nodoId = 0;
 
-    const operacionesStr = operacionesMatch[1].trim();
-    const operacionesArray = parseOperaciones(operacionesStr);
-    procesarOperaciones(operacionesArray);
-
-    let dot = `digraph G { 
-    node [shape=${forma}];
-    node [style=filled];
-    node [fillcolor=${fondo}];
-    node [fontcolor=${fuenteColor}];
-    node [fontname=${tipoFuente}];
-    edge [color="#000000"];
-    rankdir=TB;
-    `;
-
-    let nodoId = 0;
-
-    function generarNodo(operacion) {
-        const currentId = nodoId++;
-        let label = `${operacion.operacion}\\n ${operacion.resultado}`;
-        dot += `node${currentId} [label="${label}"];\n`;
-
-        if (Array.isArray(operacion.valor1)) {
-            operacion.valor1.forEach(valor => {
-                const childId = generarNodo(valor);
-                dot += `node${currentId} -> node${childId};\n`;
-            });
-        } else if (typeof operacion.valor1 === 'object' && operacion.valor1.operacion) {
-            const childId = generarNodo(operacion.valor1);
-            dot += `node${currentId} -> node${childId};\n`;
-        } else {
-            const childId = nodoId++;
-            dot += `node${childId} [label="${operacion.valor1}"];\n`;
-            dot += `node${currentId} -> node${childId};\n`;
-        }
-
-        if (operacion.valor2 !== undefined) {
-            if (Array.isArray(operacion.valor2)) {
-                operacion.valor2.forEach(valor => {
+        function generarNodo(operacion) {
+            const currentId = nodoId++;
+            let label = `${operacion.operacion}\\n ${operacion.resultado}`;
+            dot += `node${currentId} [label="${label}"];\n`;
+    
+            if (Array.isArray(operacion.valor1)) {
+                operacion.valor1.forEach(valor => {
                     const childId = generarNodo(valor);
                     dot += `node${currentId} -> node${childId};\n`;
                 });
-            } else if (typeof operacion.valor2 === 'object' && operacion.valor2.operacion) {
-                const childId = generarNodo(operacion.valor2);
+            } else if (typeof operacion.valor1 === 'object' && operacion.valor1.operacion) {
+                const childId = generarNodo(operacion.valor1);
                 dot += `node${currentId} -> node${childId};\n`;
             } else {
                 const childId = nodoId++;
-                dot += `node${childId} [label="${operacion.valor2}"];\n`;
+                dot += `node${childId} [label="${operacion.valor1}"];\n`;
                 dot += `node${currentId} -> node${childId};\n`;
             }
-        }
-
-        return currentId;
-    }
-
-    operacionesArray.forEach(operacion => {
-        generarNodo(operacion);
-    });
-
-    dot += `}\n`;
-
-    fs.writeFile('grafo.dot', dot, (error) => {
-        if (error) {
-            console.log('Error al generar .dot');
-        } else {
-            console.log('Archivo .dot generado correctamente');
-            exec('dot -Tpng grafo.dot -o grafo.png', (error) => {
-                if (error) {
-                    console.log('Error al generar .png');
-                    console.log(error);
+    
+            if (operacion.valor2 !== undefined) {
+                if (Array.isArray(operacion.valor2)) {
+                    operacion.valor2.forEach(valor => {
+                        const childId = generarNodo(valor);
+                        dot += `node${currentId} -> node${childId};\n`;
+                    });
+                } else if (typeof operacion.valor2 === 'object' && operacion.valor2.operacion) {
+                    const childId = generarNodo(operacion.valor2);
+                    dot += `node${currentId} -> node${childId};\n`;
                 } else {
-                    console.log('Archivo .png generado correctamente');
+                    const childId = nodoId++;
+                    dot += `node${childId} [label="${operacion.valor2}"];\n`;
+                    dot += `node${currentId} -> node${childId};\n`;
                 }
-            });
+            }
+    
+            return currentId;
         }
-    });    
+    
+        operacionesGlobal.forEach(operacion => {
+            generarNodo(operacion);
+        });
+    
+        dot += `}\n`;
+
+        fs.writeFile('grafo.dot', dot, (error) => {
+            if (error) {
+                console.log('Error al generar .dot');
+            } else {
+                console.log('Archivo .dot generado correctamente');
+                exec('dot -Tpng grafo.dot -o grafo.png', (error) => {
+                    if (error) {
+                        console.log('Error al generar .png');
+                        console.log(error);
+                    } else {
+                        console.log('Archivo .png generado correctamente');
+                    }
+                });
+            }
+        });    
+    } catch (error) {
+        console.log('Error al generar reportes:', error);
+    }
 }
 
 

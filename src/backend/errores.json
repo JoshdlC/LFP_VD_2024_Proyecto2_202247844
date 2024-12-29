@@ -22,13 +22,5 @@
     "fila": "N/A",
     "columna": "N/A",
     "tipo": "error léxico"
-  },
-  {
-    "numero": 4,
-    "valor": "Falta(n) 1 llave de apertura",
-    "descripcion": "{",
-    "fila": "N/A",
-    "columna": "N/A",
-    "tipo": "error léxico"
   }
 ]
