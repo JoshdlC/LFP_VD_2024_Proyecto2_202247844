@@ -19,9 +19,9 @@ ConfiguracionesParser = [
     tipoFuente: "Arial"
 ]
 
-// Comentario simple
-*/ Comentario de 
-múltiple línea */
+
+
+
 
 imprimir("Lenguajes Formales y de Programación")
 conteo()

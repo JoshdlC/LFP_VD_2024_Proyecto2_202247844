@@ -13,7 +13,7 @@ ConfiguracionesLex = [
 ]
 
 ConfiguracionesParser = [
-    fondo: "#f3ff00"
+    fondo: "#f3ff00",
     fuente: "#000000",
     forma: "box",
     tipoFuente: "Arial"

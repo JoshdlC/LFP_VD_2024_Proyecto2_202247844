@@ -114,6 +114,7 @@ app.post('/analizarTexto', (req, res) => {
 
         analizadorLexico(datosGlobalFile);
         // generarReportesHTML();
+        // analizadorSintactico(textoSinErrores);
         console.log(textoSinErrores);
         res.status(200).json({ message: 'Análisis completado', lexemas, errores });
     } catch (error) {
@@ -145,7 +146,7 @@ app.post('/realizarOperaciones', (req, res) => {
         const json = JSON.parse(datosGlobalFile);
 
 
-        procesarOperaciones(json.operaciones);
+        // procesarOperaciones(json.operaciones);
         res.status(200).json({ message: 'Operaciones realizadas correctamente', operaciones: operacionesArray });
     } catch (error) {
         res.status(500).json({ error: 'Error al realizar operaciones', detalles: error.message });
@@ -189,7 +190,8 @@ function analizadorLexico(texto) {
     let fila=1;
     let columna = 1;
     let contador = 0;
-    
+    const archivoLimpio = fs.createWriteStream('archivoLimpio.nlex'); //* Crear archivo limpio para escribirlo
+
 
     console.log()
     console.log("Analizando archivo...")
@@ -206,6 +208,7 @@ function analizadorLexico(texto) {
         if (codigo === 32) {
             contador++;
             columna++;
+            archivoLimpio.write(' ');
             continue;
         }
 
@@ -214,6 +217,7 @@ function analizadorLexico(texto) {
             if (codigo === 10){
                 fila++;
                 columna = 1;
+                archivoLimpio.write('\n');
             }
             // fila++;
 
@@ -227,6 +231,7 @@ function analizadorLexico(texto) {
         else if (codigo === 9) {
             contador++;
             columna=columna+4;
+            archivoLimpio.write('\t');
             continue;
         }
 
@@ -242,13 +247,14 @@ function analizadorLexico(texto) {
             }
             lexemas.push(new Lexema('Número', numero, fila, columna));
             textoSinErrores += numero;
-        
+            archivoLimpio.write(numero);
             if (texto.charCodeAt(contador) === 44) { //* Si encontramos una coma
                 lexemas.push(new Lexema('Coma', ',', fila, columna));
                 // fila++; //* Aumentamos la fila
                 columna = 1; //* Reiniciamos la columna
                 contador++; //* Avanzamos el contador para saltar la coma
                 textoSinErrores += ',';
+                archivoLimpio.write(',');
             } else if (texto.charCodeAt(contador) !== 46 && texto.charCodeAt(contador) !== 44) { //* Si no es un punto ni un espacio en blanco
                 // fila++; //* Aumentamos la fila
             }
@@ -272,6 +278,7 @@ function analizadorLexico(texto) {
                 lexemas.push(new Lexema('Identificador', palabra, fila, columna));
             }
             textoSinErrores += palabra;
+            archivoLimpio.write(palabra);
             continue;
         }
 
@@ -297,6 +304,7 @@ function analizadorLexico(texto) {
         else if (codigo === 40) {
             lexemas.push(new Lexema('Paréntesis de apertura', texto[contador], fila, columna));
             textoSinErrores += texto[contador];
+            archivoLimpio.write(texto[contador]);
             columna++;
             contador++;
         }
@@ -305,6 +313,7 @@ function analizadorLexico(texto) {
         else if (codigo === 41) {
             lexemas.push(new Lexema('Paréntesis de cierre', texto[contador], fila, columna));
             textoSinErrores += texto[contador];
+            archivoLimpio.write(texto[contador]);
             columna++;
             contador++;
         }
@@ -313,6 +322,8 @@ function analizadorLexico(texto) {
         else if (codigo === 123) {
             lexemas.push(new Lexema('Llave de apertura', texto[contador], fila, columna));
             textoSinErrores += texto[contador];
+            archivoLimpio.write(texto[contador]);
+
             // fila++; //? Aumentamos la fila
             columna++;
             contador++;
@@ -325,6 +336,7 @@ function analizadorLexico(texto) {
                 // fila++; //? Aumentamos la fila
             }
             textoSinErrores += texto[contador];
+            archivoLimpio.write(texto[contador]);
             columna++;
             contador++;
         }
@@ -334,6 +346,7 @@ function analizadorLexico(texto) {
             lexemas.push(new Lexema('Corchete de apertura', texto[contador], fila, columna));
             // fila++; //? Aumentamos la fila
             textoSinErrores += texto[contador];
+            archivoLimpio.write(texto[contador]);
             columna++;
             contador++;
             
@@ -346,6 +359,7 @@ function analizadorLexico(texto) {
                 // fila++; //? Aumentamos la fila
             }
             textoSinErrores += texto[contador];
+            archivoLimpio.write(texto[contador]);
             columna++;
             contador++;
         }
@@ -354,6 +368,7 @@ function analizadorLexico(texto) {
         else if (codigo === 59) {
             lexemas.push(new Lexema('Punto y coma', texto[contador], fila, columna));
             textoSinErrores += texto[contador];
+            archivoLimpio.write(texto[contador]);
             columna++;
             contador++;
         }
@@ -362,6 +377,7 @@ function analizadorLexico(texto) {
         else if (codigo === 58){
             lexemas.push(new Lexema('Dos puntos', texto[contador], fila, columna));
             textoSinErrores += texto[contador];
+            archivoLimpio.write(texto[contador]);
             columna++;
             contador++;
         }
@@ -387,6 +403,7 @@ function analizadorLexico(texto) {
                 lexemas.push(new Lexema('Identificador', cadena, fila, columna));
             }
             textoSinErrores += `"${cadena}"`;
+            archivoLimpio.write(`"${cadena}"`);
             continue;
             
         }
@@ -396,6 +413,8 @@ function analizadorLexico(texto) {
             lexemas.push(new Lexema('Coma', texto[contador], fila, columna));
             // fila++; //? Aumentamos la fila
             textoSinErrores += texto[contador];
+            archivoLimpio.write(texto[contador]);
+
             columna++;
             contador++;
         }
@@ -404,6 +423,7 @@ function analizadorLexico(texto) {
         else if (codigo === 46){
             lexemas.push(new Lexema('Punto', texto[contador], fila, columna));
             textoSinErrores += texto[contador];
+            archivoLimpio.write(texto[contador]);
             columna++;
             contador++;
         }
@@ -412,6 +432,7 @@ function analizadorLexico(texto) {
         else if (codigo === 61) {
             lexemas.push(new Lexema('Igual', texto[contador], fila, columna));
             textoSinErrores += texto[contador];
+            archivoLimpio.write(texto[contador]);
             columna++;
             contador++;
         }
@@ -423,6 +444,7 @@ function analizadorLexico(texto) {
             }
             fila++;
             columna = 1;
+            archivoLimpio.write('\n');
             contador++;
         }
 
@@ -433,6 +455,7 @@ function analizadorLexico(texto) {
                 if (texto.charCodeAt(contador) === 10) {
                     fila++;
                     columna = 1;
+                    archivoLimpio.write('\n');	
                 }
                 contador++;
             }
@@ -455,12 +478,31 @@ function analizadorLexico(texto) {
             } else {
                 columna++;
                 textoSinErrores += valor;
+                archivoLimpio.write(valor);
                 lexemas.push(new Lexema('Palabra reservada', valor, fila, columna));
             }
         }
 
     }
+
+    archivoLimpio.end(); //* Cerrar archivo limpio
     datosGlobalFile = textoSinErrores;
+
+
+    fs.readFile('archivoLimpio.nlex', 'utf-8', (error, data) => {
+        if (error){
+            console.log('Error al leer el archivo limpio: \n', error);
+            return;
+        }
+        console.log('Data del archivo: \n', data);
+
+        try {
+            analizadorSintactico(data);
+        } catch (error) {
+            console.log(error);
+        }
+    });
+    
 }
 
 
@@ -469,77 +511,92 @@ function analizadorSintactico(texto) {
     let fila = 1;
     let contador = 0;
 
-
+    //* abrir archivo limpio para escribirlo
     
     let tipoOperacion = ['resta', 'suma', 'multiplicacion', 'division', 'potencia', 'raiz', 'inverso', 'seno', 'coseno', 'tangente', 'mod'];
 
     operacionesFlag = false;
-    const json = JSON.parse(texto);
-    if (!json.Operaciones) {
-        console.log('No se encontró la clave operaciones en el archivo JSON');
-        return;
-    }
-
+    // const json = JSON.parse(texto);
+    // if (!json.Operaciones) {
+    //     console.log('No se encontró la clave operaciones en el archivo JSON');
+    //     return;
+    // }
+    console.log("-".repeat(50));
+    console.log("Data recibida: \n", texto);
     console.log("");
     console.log("Comenzando análisis sintáctico...");
     console.log("");
 
     while (contador < texto.length) {
         let codigo = texto.charCodeAt(contador);
+        console.log(`Procesando carácter: ${texto[contador]} (código: ${codigo}) en posición ${contador}`); // Depuración
+
         //* Si encuentra la O de Operaciones
         if (codigo === 79){
-            //* Hasta que no encuentre la letra C de ConfiguracionesLex
-            while (codigo !== 67) {
-                contador++;
-                codigo = texto.charCodeAt(contador);
-                if (codigo === 32){
-                    contador++;
-                }
-                else if (codigo === 91){
-                    contador++;
-                    contadorCorchetesApertura++;
-                }
-                else if (codigo === 93){
-                    contadorCorchetesCierre++;
-                    contador++;
-                }
+            // //* Hasta que no encuentre la letra C de ConfiguracionesLex
+            // while (codigo !== 67) {
+            //     contador++;
+            //     codigo = texto.charCodeAt(contador);
+            //     if (codigo === 32){
+            //         contador++;
+            //     }
+            //     else if (codigo === 91){
+            //         contador++;
+            //         contadorCorchetesApertura++;
+            //     }
+            //     else if (codigo === 93){
+            //         contadorCorchetesCierre++;
+            //         contador++;
+            //     }
                 
-                else if (codigo === 123){
-                    contadorLlavesApertura++;
-                    contador++;
-                }
-                else if (codigo === 125){
-                    contadorLlavesCierre++;
-                    contador++;
+            //     else if (codigo === 123){
+            //         contadorLlavesApertura++;
+            //         contador++;
+            //     }
+            //     else if (codigo === 125){
+            //         contadorLlavesCierre++;
+            //         contador++;
                     
-                }
-                else if (codigo === 44){
-                    contadorComas++;
-                    contador++;
-                }
-                //* Comillas dobles 
-                else if (codigo === 34){
-                    let cadena = '';
+            //     }
+            //     else if (codigo === 44){
+            //         contadorComas++;
+            //         contador++;
+            //     }
+            //     //* Comillas dobles 
+            //     else if (codigo === 34){
+            //         let cadena = '';
                     
-                    contador++;
-                    codigo = texto.charCodeAt(contador);
-                    while (codigo !== 34) {
-                        cadena += texto[contador];
-                        contador++;
-                        codigo = texto.charCodeAt(contador);
-                    }
-                    contador++;
-                    codigo = texto.charCodeAt(contador);
-                    if (codigo === 34) {
-                        contadorComillasDobles++;
-                    }
-                    console.log('Cadena: ', cadena);
-                    if (palabrasReservadas.includes(cadena)) {
-                        continue;
-                    } else {
+            //         contador++;
+            //         codigo = texto.charCodeAt(contador);
+            //         while (codigo !== 34) {
+            //             cadena += texto[contador];
+            //             contador++;
+            //             codigo = texto.charCodeAt(contador);
+            //         }
+            //         contador++;
+            //         codigo = texto.charCodeAt(contador);
+            //         if (codigo === 34) {
+            //             contadorComillasDobles++;
+            //         }
+            //         console.log('Cadena: ', cadena);
+            //         if (palabrasReservadas.includes(cadena)) {
+            //             continue;
+            //         } else {
                         
-                    }
-                }
+            //         }
+            //     }
+            // }
+            const palabra = texto.substring(contador, contador + 11);
+            console.log(palabra)
+            if (palabra === 'Operaciones') {
+                console.log("Operaciones encontradas");
+                contador += 12; // Avanza el contador después de 'Operaciones = '
+                const operaciones = revisarOperacionesSinc(texto, contador);
+                console.log(operaciones);
+
+                contador += operaciones.length;
+            } else {
+                contador++;
             }
             
         }
@@ -563,7 +620,7 @@ function analizadorSintactico(texto) {
             }
             else {
                 console.log("Error de sintaxis: Configuración no válida");
-                
+                contador++;
             }
         }
 
@@ -571,6 +628,25 @@ function analizadorSintactico(texto) {
             revisarInstr(texto, contador);
 
         }
+        //* Si encuentra "
+        else if (codigo === 34) { 
+            contador++; //* Avanza el contador después de la comilla de apertura
+            let cadena = '';
+            contadorComas++;
+            while (contador < texto.length && texto.charCodeAt(contador) !== 34) { // '"' en ASCII
+                cadena += texto[contador];
+                contador++;
+            }
+            if (texto.charCodeAt(contador) === 34) {
+                contador++; //* Avanza el contador después de la comilla de cierre
+                console.log(`Cadena encontrada: "${cadena}"`);
+                contadorComas++;
+            } else {
+                console.log("Error de sintaxis: Falta una comilla de cierre");
+                errores.push(new Error('Falta una comilla de cierre', '"', fila, columna, 'Error sintáctico'));
+            }
+        }
+        
         //* Si encuentra (
         else if (codigo === 40){
             contadorParentesisApertura++;
@@ -607,13 +683,23 @@ function analizadorSintactico(texto) {
             contadorComas++;
             contador++;
         }
-
+        
+        //* Si encuentra un salto de linea o un espacio sigue
+        else if (codigo === 10 || codigo === 32){
+            contador++;
+        }
         else {
             console.log("Error de sintaxis: Caracter no reconocido");
         }
     }
 
-
+    console.log('Corchetes apertura: ', contadorCorchetesApertura);
+    console.log('Corchetes cierre: ', contadorCorchetesCierre);
+    console.log('Parentesis apertura: ', contadorParentesisApertura);
+    console.log('Parentesis cierre: ', contadorParentesisCierre);
+    console.log('Llaves apertura: ', contadorLlavesApertura);
+    console.log('Llaves cierre: ', contadorLlavesCierre);
+    console.log('Comas: ', contadorComas);
     if (contadorCorchetesApertura >= contadorCorchetesCierre){
         console.log("Error de sintaxis: Falta un corchete de cierre");
         errores.push(new Error('Falta un corchete de cierre', ']', 'N/A', 'N/A', 'Error sintáctico'));
@@ -648,9 +734,106 @@ function analizadorSintactico(texto) {
 }
 
 
+//! Revisa operaciones anidadas
+function procesarOperacionesSinc(texto, contador) {
+    const operaciones = [];
+    while (contador < texto.length) {
+        const codigo = texto.charCodeAt(contador);
 
-function procesarOperaciones(operacionesArray) {
-    // Implementa la lógica para evaluar operaciones y almacenar resultados en operacionesArray.
+        if (codigo === 123) { // '{' en ASCII
+            contador++; // Avanza el contador después de '{'
+            contadorLlavesApertura++;
+            const operacion = {};
+            while (contador < texto.length && texto.charCodeAt(contador) !== 125) { // '}' en ASCII
+                const atributo = texto.substring(contador, texto.indexOf(':', contador)).trim();
+                contador = texto.indexOf(':', contador) + 1;
+                let valor;
+                if (texto.charAt(contador) === '{') {
+                    valor = procesarOperacionesSinc(texto, contador);
+                    contador = texto.indexOf('}', contador) + 1;
+                    contadorLlavesCierre++;
+                } else if (texto.charAt(contador) === '[') {
+                    valor = procesarOperacionesSinc(texto, contador);
+                    contador = texto.indexOf(']', contador) + 1;
+                    contadorCorchetesCierre++;
+                } else {
+                    const nextComma = texto.indexOf(',', contador);
+                    const nextBrace = texto.indexOf('}', contador);
+                    if (nextComma === -1 || nextBrace < nextComma) {
+                        valor = texto.substring(contador, nextBrace).trim();
+                        contador = nextBrace;
+                    } else {
+                        valor = texto.substring(contador, nextComma).trim();
+                        contador = nextComma + 1;
+                    }
+                }
+                operacion[atributo] = valor;
+            }
+            if (texto.charCodeAt(contador) !== 125) {
+                throw new Error(`Error sintáctico: falta '}' en la operación`);
+            }
+            operaciones.push(operacion);
+            contador++; // Avanza el contador después de '}'
+            contadorLlavesCierre++;
+        } else {
+            contador++;
+        }
+    }
+    return operaciones;
+}
+
+//! Revisa las operaciones principales
+function revisarOperacionesSinc (texto, contador){
+    const operaciones = [];
+    while (contador < texto.length) {
+        const codigo = texto.charCodeAt(contador);
+
+        if (codigo === 123) { // '{' en ASCII
+            contador++; // Avanza el contador después de '{'
+            contadorLlavesApertura++;
+            const operacion = {};
+            while (contador < texto.length && texto.charCodeAt(contador) !== 125) { // '}' en ASCII
+                const atributo = texto.substring(contador, texto.indexOf(':', contador)).trim();
+                contador = texto.indexOf(':', contador) + 1;
+                let valor;
+                if (texto.charAt(contador) === '{') {
+                    valor = procesarOperacionesSinc(texto, contador);
+                    contador = texto.indexOf('}', contador) + 1;
+                    contadorLlavesCierre++;
+                } else if (texto.charAt(contador) === '[') {
+                    valor = procesarOperacionesSinc(texto, contador);
+                    contador = texto.indexOf(']', contador) + 1;
+                    contadorCorchetesCierre++;
+                } else {
+                    const nextComma = texto.indexOf(',', contador);
+                    const nextBrace = texto.indexOf('}', contador);
+                    if (nextComma === -1 || nextBrace < nextComma) {
+                        valor = texto.substring(contador, nextBrace).trim();
+                        contador = nextBrace;
+                    } else {
+                        valor = texto.substring(contador, nextComma).trim();
+                        contador = nextComma + 1;
+                    }
+                }
+                operacion[atributo] = valor;
+            }
+            if (texto.charCodeAt(contador) !== 125) {
+                throw new Error(`Error sintáctico: falta '}' en la operación`);
+            }
+            operaciones.push(operacion);
+            contador++; //? Avanza el contador después de '}'
+            contadorLlavesCierre++;
+        } else if (codigo === 91) { //* '[' en ASCII
+            contador++; //? Avanza el contador después de '['
+            contadorCorchetesApertura++;
+        } else if (codigo === 93) { //* ']' en ASCII
+            contador++; //? Avanza el contador después de ']'
+            contadorCorchetesCierre++;
+        } else {
+            contador++;
+        }
+    }
+    return operaciones;
 }
 
 

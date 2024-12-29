@@ -16,11 +16,13 @@ function HomePage() {
     const selectedFile = event.target.files[0];
     setFile(selectedFile);
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setFileContent(e.target.result);
-    };
-    reader.readAsText(selectedFile);
+    if (selectedFile) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setFileContent(e.target.result);
+      };
+      reader.readAsText(selectedFile);
+    }
   };
 
   const handleFileUpload = async () => {
@@ -50,7 +52,7 @@ function HomePage() {
 
   const handleAnalyze = async () => {
     try {
-      const response = await axios.post('http://localhost:3000/analizarTexto');
+      const response = await axios.post('http://localhost:3000/analizarTexto',  { texto: fileContent });
       setAnalysisResult(response.data);
       setOutputContent((prev) => prev + '\nAnálisis completado.');
 
@@ -82,7 +84,7 @@ function HomePage() {
       </div>
       <div className="homepage-buttons">
         <label className="button">
-          Cargar
+          Seleccionar Archivo
           <input type="file" className="hidden" onChange={handleFileChange}/>
         </label>
         <button className="button" onClick={handleFileUpload}>
