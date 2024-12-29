@@ -485,28 +485,32 @@ function analizadorLexico(texto) {
 
     }
 
-    archivoLimpio.end(); //* Cerrar archivo limpio
+
     datosGlobalFile = textoSinErrores;
 
 
-    fs.readFile('archivoLimpio.nlex', 'utf-8', (error, data) => {
-        if (error){
-            console.log('Error al leer el archivo limpio: \n', error);
-            return;
-        }
-        console.log('Data del archivo: \n', data);
-
-        try {
-            analizadorSintactico(data);
-        } catch (error) {
-            console.log(error);
-        }
+    archivoLimpio.end(() => {  //* Cerrar archivo limpio
+        // Leer el archivo limpio y pasar su contenido al analizador sintáctico
+        fs.readFile('archivoLimpio.nlex', 'utf8', (err, data) => {
+            if (err) {
+                console.error('Error leyendo archivo limpio:', err);
+                return;
+            }
+            console.log('Data del archivo: \n', data);
+            try {
+                analizadorSintactico(data);
+            } catch (error) {
+                console.log(error);
+            }
+        });
     });
     
 }
 
 
 function analizadorSintactico(texto) {
+    
+    
     let columna = 1;
     let fila = 1;
     let contador = 0;
@@ -530,6 +534,8 @@ function analizadorSintactico(texto) {
     while (contador < texto.length) {
         let codigo = texto.charCodeAt(contador);
         console.log(`Procesando carácter: ${texto[contador]} (código: ${codigo}) en posición ${contador}`); // Depuración
+        console.log(`${texto[contador+1]}${texto[contador+2]}${texto[contador+3]}`)
+        console.log('Analisis Sinc...')
 
         //* Si encuentra la O de Operaciones
         if (codigo === 79){
@@ -603,31 +609,55 @@ function analizadorSintactico(texto) {
 
         //* Si encuentra la C ya sea de ConfiguracionesLex o ConfiguracionesParser
         else if (codigo === 67 ){
-            const palabra = texto.substring(contador, contador + 17);
-            if (palabra === 'ConfiguracionesLex'){
+            const palabra = texto.substring(contador, contador + 18);
+            console.log(`${palabra} en posición ${contador}`);
+            // console.log(palabra)
+            if (palabra === 'ConfiguracionesLex') {
                 console.log("ConfiguracionesLex encontrada");
                 contador += 19;
-                // columna += 17;
                 contadorCorchetesApertura++;
-                revisarConfigs(texto, contador, 'lex');
-                
-            }
-            else if (palabra === 'ConfiguracionesPar'){
+                contador = revisarConfigs(texto, contador, 'lex'); // Actualiza el contador con el valor devuelto
+            } else if (palabra === 'ConfiguracionesPar') {
                 console.log("ConfiguracionesParser encontrada");
                 contador += 22;
                 contadorCorchetesApertura++;
-                revisarConfigs(texto, contador, 'par');
-            }
-            else {
+                contador = revisarConfigs(texto, contador, 'par'); // Actualiza el contador con el valor devuelto
+            } else {
                 console.log("Error de sintaxis: Configuración no válida");
                 contador++;
             }
         }
-
-        else if (codigo === 105 || codigo === 112 || codigo === 109 || codigo === 103){
-            revisarInstr(texto, contador);
-
+        //* Si encuentra la i de imprimir
+        else if (codigo === 105){
+            const palabra = texto.substring(contador, contador + 8);
+            console.log(`${palabra} en posición ${contador}`);
+            contador = revisarInstr(texto, contador);
         }
+        //* si encuentra p de promedio
+        else if (codigo === 112 ){
+            const palabra = texto.substring(contador, contador + 8);
+            console.log(`${palabra} en posición ${contador}`);
+            contador = revisarInstr(texto, contador);
+        }
+        //* si encuentra c de conteo
+        else if (codigo === 99 ){
+            const palabra = texto.substring(contador, contador + 6);
+            console.log(`${palabra} en posición ${contador}`);
+            contador = revisarInstr(texto, contador);
+        }
+        //* si encuentra m de max o min
+        else if (codigo === 109 ){
+            const palabra = texto.substring(contador, contador + 3);
+            console.log(`${palabra} en posición ${contador}`);
+            contador = revisarInstr(texto, contador);
+        }
+        //* si encuentra g de generarReporte
+        else if (codigo === 103 ){
+            const palabra = texto.substring(contador, contador + 14);
+            contador = revisarInstr(texto, contador);
+            contador = revisarInstr(texto, contador);
+        }
+
         //* Si encuentra "
         else if (codigo === 34) { 
             contador++; //* Avanza el contador después de la comilla de apertura
@@ -647,6 +677,20 @@ function analizadorSintactico(texto) {
             }
         }
         
+        //* Si encuentra numeros
+        else if (codigo >= 48 && codigo <= 57) { 
+            let numero = '';
+            while (contador < texto.length && ((codigo >= 48 && codigo <= 57) || codigo === 46)) { // Incluye el punto decimal
+                numero += texto[contador];
+                contador++;
+                codigo = texto.charCodeAt(contador);
+            }
+            console.log(`Número encontrado: ${numero}`);
+        }
+        //* Si encuentra :
+        else if (codigo === 58){
+            contador++;
+        }
         //* Si encuentra (
         else if (codigo === 40){
             contadorParentesisApertura++;
@@ -700,29 +744,36 @@ function analizadorSintactico(texto) {
     console.log('Llaves apertura: ', contadorLlavesApertura);
     console.log('Llaves cierre: ', contadorLlavesCierre);
     console.log('Comas: ', contadorComas);
-    if (contadorCorchetesApertura >= contadorCorchetesCierre){
+    console.log('Comillas dobles: ', contadorComillasDobles);
+    
+    const diferenciaCorchetes = contadorCorchetesApertura - contadorCorchetesCierre;
+    const diferenciaParentesis = contadorParentesisApertura - contadorParentesisCierre;
+    const diferenciaLlaves = contadorLlavesApertura - contadorLlavesCierre;
+    if (diferenciaCorchetes > 0){
         console.log("Error de sintaxis: Falta un corchete de cierre");
-        errores.push(new Error('Falta un corchete de cierre', ']', 'N/A', 'N/A', 'Error sintáctico'));
+        errores.push(new Error(`Falta(n)  ${Math.abs(diferenciaCorchetes)} corchete(s) de cierre`, ']', 'N/A', 'N/A', 'Error sintáctico'));
     }
-    if (contadorCorchetesApertura <= contadorCorchetesCierre){
+    else if (diferenciaCorchetes < 0){
         console.log("Error de sintaxis: Falta un corchete de apertura");
-        errores.push(new Error('Falta un corchete de apertura', '[', 'N/A', 'N/A', 'Error sintáctico'));
+        errores.push(new Error(`Falta(n) ${Math.abs(diferenciaCorchetes)} corchete(s) de apertura`, '[', 'N/A', 'N/A', 'Error sintáctico'));
     }
-    if (contadorParentesisApertura >= contadorParentesisCierre){
+
+    if (diferenciaParentesis > 0){
         console.log("Error de sintaxis: Falta un paréntesis de cierre");
-        errores.push(new Error('Falta un paréntesis de cierre', ')', 'N/A', 'N/A', 'Error sintáctico'));
+        errores.push(new Error(`Falta(n) ${Math.abs(diferenciaParentesis)} paréntesis de cierre`, ')', 'N/A', 'N/A', 'Error sintáctico'));
     }
-    if (contadorParentesisApertura <= contadorParentesisCierre){
+    else if (diferenciaParentesis < 0){
         console.log("Error de sintaxis: Falta un paréntesis de apertura");
-        errores.push(new Error('Falta un paréntesis de apertura', '(', 'N/A', 'N/A', 'Error sintáctico'));
+        errores.push(new Error(`Falta(n) ${Math.abs(diferenciaParentesis)} paréntesis de apertura`, '(', 'N/A', 'N/A', 'Error sintáctico'));
     }
-    if (contadorLlavesApertura >= contadorLlavesCierre){
+
+    if (diferenciaLlaves > 0){
         console.log("Error de sintaxis: Falta una llave de cierre");
-        errores.push(new Error('Falta una llave de cierre', '}', 'N/A', 'N/A', 'Error sintáctico'));
+        errores.push(new Error(`Falta(n) ${Math.abs(diferenciaLlaves)} llave de cierre`, '}', 'N/A', 'N/A', 'Error sintáctico'));
     }
-    if (contadorLlavesApertura <= contadorLlavesCierre){
+    if (diferenciaLlaves < 0){
         console.log("Error de sintaxis: Falta una llave de apertura");
-        errores.push(new Error('Falta una llave de apertura', '{', 'N/A', 'N/A', 'Error sintáctico'));
+        errores.push(new Error(`Falta(n) ${Math.abs(diferenciaLlaves)} llave de apertura`, '{', 'N/A', 'N/A', 'Error sintáctico'));
     }
         
     if (contadorComillasDobles % 2 !== 0){
@@ -742,7 +793,7 @@ function procesarOperacionesSinc(texto, contador) {
 
         if (codigo === 123) { // '{' en ASCII
             contador++; // Avanza el contador después de '{'
-            contadorLlavesApertura++;
+            // contadorLlavesApertura++;
             const operacion = {};
             while (contador < texto.length && texto.charCodeAt(contador) !== 125) { // '}' en ASCII
                 const atributo = texto.substring(contador, texto.indexOf(':', contador)).trim();
@@ -751,11 +802,11 @@ function procesarOperacionesSinc(texto, contador) {
                 if (texto.charAt(contador) === '{') {
                     valor = procesarOperacionesSinc(texto, contador);
                     contador = texto.indexOf('}', contador) + 1;
-                    contadorLlavesCierre++;
+                    // contadorLlavesCierre++;
                 } else if (texto.charAt(contador) === '[') {
                     valor = procesarOperacionesSinc(texto, contador);
                     contador = texto.indexOf(']', contador) + 1;
-                    contadorCorchetesCierre++;
+                    // contadorCorchetesCierre++;
                 } else {
                     const nextComma = texto.indexOf(',', contador);
                     const nextBrace = texto.indexOf('}', contador);
@@ -774,7 +825,7 @@ function procesarOperacionesSinc(texto, contador) {
             }
             operaciones.push(operacion);
             contador++; // Avanza el contador después de '}'
-            contadorLlavesCierre++;
+            // contadorLlavesCierre++;
         } else {
             contador++;
         }
@@ -790,7 +841,7 @@ function revisarOperacionesSinc (texto, contador){
 
         if (codigo === 123) { // '{' en ASCII
             contador++; // Avanza el contador después de '{'
-            contadorLlavesApertura++;
+            // contadorLlavesApertura++;
             const operacion = {};
             while (contador < texto.length && texto.charCodeAt(contador) !== 125) { // '}' en ASCII
                 const atributo = texto.substring(contador, texto.indexOf(':', contador)).trim();
@@ -799,11 +850,11 @@ function revisarOperacionesSinc (texto, contador){
                 if (texto.charAt(contador) === '{') {
                     valor = procesarOperacionesSinc(texto, contador);
                     contador = texto.indexOf('}', contador) + 1;
-                    contadorLlavesCierre++;
+                    // contadorLlavesCierre++;
                 } else if (texto.charAt(contador) === '[') {
                     valor = procesarOperacionesSinc(texto, contador);
                     contador = texto.indexOf(']', contador) + 1;
-                    contadorCorchetesCierre++;
+                    // contadorCorchetesCierre++;
                 } else {
                     const nextComma = texto.indexOf(',', contador);
                     const nextBrace = texto.indexOf('}', contador);
@@ -822,7 +873,7 @@ function revisarOperacionesSinc (texto, contador){
             }
             operaciones.push(operacion);
             contador++; //? Avanza el contador después de '}'
-            contadorLlavesCierre++;
+            // contadorLlavesCierre++;
         } else if (codigo === 91) { //* '[' en ASCII
             contador++; //? Avanza el contador después de '['
             contadorCorchetesApertura++;
@@ -840,18 +891,19 @@ function revisarOperacionesSinc (texto, contador){
 //? Revisa las instrucciones cargadas
 function revisarInstr(texto, contador){
     console.log();
+    console.log('Revisando instrucciones...');
     while (contador < texto.length) {
         const codigo = texto.charCodeAt(contador);
         //* Si encuentra la i de imprimir
         if (codigo === 105) {
-            const palabra = texto.substring(contador, contador + 7);
+            const palabra = texto.substring(contador, contador + 8);
             if (palabra === 'imprimir') {
                 console.log("Imprimir encontrado");
-                contador += 7;
+                contador += 9;
                 contadorParentesisApertura++;
                 const valor = texto.substring(contador + 1, texto.indexOf(')', contador)).trim();
-                console.log('Valor: ', valor);
-                contador += valor.length + 1;
+                console.log('Instruccion Imprimir: \n ', valor, ' \n');
+                contador += valor.length + 2;
                 contadorParentesisCierre++;
 
             }
@@ -870,7 +922,7 @@ function revisarInstr(texto, contador){
                 contador += 9; //* Avanza el contador después de 'promedio'
                 contadorParentesisApertura++;
                 const valor = texto.substring(contador + 1, texto.indexOf(')', contador)).trim();
-                console.log('Valor: ', valor);
+                console.log('Promedio de las operaciones: ', valor);
                 contador += valor.length + 2; //* Avanza el contador después del valor y ')'
                 contadorParentesisCierre++;
 
@@ -897,10 +949,10 @@ function revisarInstr(texto, contador){
 
             }
         } else if (codigo === 103) { //* si encuentra g de generarReporte
-            const palabra = texto.substring(contador, contador + 13);
+            const palabra = texto.substring(contador, contador + 14);
             if (palabra === 'generarReporte') {
                 console.log("GenerarReporte encontrado");
-                contador += 14; //* Avanza el contador después de 'generarReporte'
+                contador += 15; //* Avanza el contador después de 'generarReporte'
                 contadorParentesisApertura++;
                 const parametros = texto.substring(contador + 1, texto.indexOf(')', contador)).split(',').map(param => param.trim());
                 console.log('Parámetros: ', parametros);
@@ -912,19 +964,25 @@ function revisarInstr(texto, contador){
             contador++;
         }
     }
+    return contador;
 }
 
 
 //? Revisa las configuraciones cargadas
 function revisarConfigs(texto, contador, tipo){
-    
+    let configuraciones = {};
     while (contador < texto.length) {
         const codigo = texto.charCodeAt(contador);
+        const codNext = texto.charCodeAt(contador + 1);
+        const codTres = texto.charCodeAt(contador + 2);
         if (codigo === 93) { //* ']' en ASCII
-            contadorCorchetesCierre++;
+            // contadorCorchetesCierre++;
+            console.log("Corchete de cierre encontrado \n Configuraciones completadas");
+            contador++;
             break;
         }
-        if (codigo === 102) { //* 'f' en ASCII
+        if (codigo === 102 && codNext === 111 && codTres === 110) { //* 'fo' en ASCII
+            
             const palabraConfig = texto.substring(contador, contador + 5);
             if (palabraConfig.startsWith('fondo')) {
                 console.log("Fondo encontrado");
@@ -932,8 +990,9 @@ function revisarConfigs(texto, contador, tipo){
                 const valor = texto.substring(contador, texto.indexOf(',', contador)).trim();
                 configuraciones.fondo = valor;
                 contador += valor.length + 1; //* Avanza el contador después del valor
+                verificarCaracterSiguiente(texto, contador);
             }
-        } else if (codigo === 102) { //* 'f' en ASCII
+        } else if (codigo === 102 && codNext === 117) { //* 'f' en ASCII
             const palabraConfig = texto.substring(contador, contador + 6);
             if (palabraConfig.startsWith('fuente')) {
                 console.log("Fuente encontrada");
@@ -941,8 +1000,9 @@ function revisarConfigs(texto, contador, tipo){
                 const valor = texto.substring(contador, texto.indexOf(',', contador)).trim();
                 configuraciones.fuente = valor;
                 contador += valor.length + 1; //* Avanza el contador después del valor
+                verificarCaracterSiguiente(texto, contador);
             }
-        } else if (codigo === 102) { //* 'f' en ASCII
+        } else if (codigo === 102 && codNext === 111 && codTres === 114) { //* 'f' en ASCII
             const palabraConfig = texto.substring(contador, contador + 5);
             if (palabraConfig.startsWith('forma')) {
                 console.log("Forma encontrada");
@@ -950,6 +1010,7 @@ function revisarConfigs(texto, contador, tipo){
                 const valor = texto.substring(contador, texto.indexOf(',', contador)).trim();
                 configuraciones.forma = valor;
                 contador += valor.length + 1; //* Avanza el contador después del valor
+                verificarCaracterSiguiente(texto, contador);
             }
         } else if (codigo === 116) { //* 't' en ASCII
             const palabraConfig = texto.substring(contador, contador + 10);
@@ -959,21 +1020,40 @@ function revisarConfigs(texto, contador, tipo){
                 const valor = texto.substring(contador, texto.indexOf(']', contador)).trim();
                 configuraciones.tipoFuente = valor;
                 contador += valor.length + 1; //* Avanza el contador después del valor
+                verificarCaracterSiguiente(texto, contador);
             }
+        } else if (codigo === 44) { //* ',' en ASCII
+            console.log("Coma encontrada en posición ", contador);
+            contador++; //* Avanza el contador después de la coma
         } else {
             contador++;
         }
     }
-    if (tipo === 'lex'){
+    if (tipo === 'lex') {
         configuraciones.tipo = 'lex';
         configLex.push(configuraciones);
-
     } else {
         configuraciones.tipo = 'par';
         configPar.push(configuraciones);
     }
-     
-    return configuraciones;
+    return contador;
+}
+
+
+function verificarCaracterSiguiente(texto, contador) {
+    const codigo = texto.charCodeAt(contador);
+    console.log(`Verificando carácter siguiente: ${texto[contador]} (código: ${codigo}) en posición ${contador}`); // Depuración
+    if (
+        codigo !== 44 && // ',' en ASCII
+        codigo !== 125 && // '}' en ASCII
+        codigo !== 34 && // '"' en ASCII
+        !(codigo >= 48 && codigo <= 57) && // Números en ASCII (0-9)
+        codigo !== 46 && // '.' en ASCII
+        !((codigo >= 65 && codigo <= 90) || (codigo >= 97 && codigo <= 122)) // Letras en ASCII (A-Z, a-z)
+    ) {
+        console.log("Error de sintaxis: Caracter no esperado después del valor");
+        errores.push(new Error('Caracter no esperado después del valor', texto[contador], 'N/A', 'N/A', 'Error sintáctico'));
+    }
 }
 
 //! FUNCION NO IMPORTANTE, SE GENERAN LAS TABLAS DESDE HOMEPAGE.JSX

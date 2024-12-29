@@ -1,47 +1,31 @@
 [
   {
     "numero": 1,
-    "valor": "Falta un corchete de cierre",
-    "descripcion": "]",
+    "valor": "Caracter no esperado después del valor",
+    "descripcion": "\n",
     "fila": "N/A",
     "columna": "N/A",
     "tipo": "error léxico"
   },
   {
     "numero": 2,
-    "valor": "Falta un corchete de apertura",
-    "descripcion": "[",
+    "valor": "Caracter no esperado después del valor",
+    "descripcion": "\n",
     "fila": "N/A",
     "columna": "N/A",
     "tipo": "error léxico"
   },
   {
     "numero": 3,
-    "valor": "Falta un paréntesis de cierre",
-    "descripcion": ")",
+    "valor": "Falta(n) 2 corchete(s) de apertura",
+    "descripcion": "[",
     "fila": "N/A",
     "columna": "N/A",
     "tipo": "error léxico"
   },
   {
     "numero": 4,
-    "valor": "Falta un paréntesis de apertura",
-    "descripcion": "(",
-    "fila": "N/A",
-    "columna": "N/A",
-    "tipo": "error léxico"
-  },
-  {
-    "numero": 5,
-    "valor": "Falta una llave de cierre",
-    "descripcion": "}",
-    "fila": "N/A",
-    "columna": "N/A",
-    "tipo": "error léxico"
-  },
-  {
-    "numero": 6,
-    "valor": "Falta una llave de apertura",
+    "valor": "Falta(n) 1 llave de apertura",
     "descripcion": "{",
     "fila": "N/A",
     "columna": "N/A",
