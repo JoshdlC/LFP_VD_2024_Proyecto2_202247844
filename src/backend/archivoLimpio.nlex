@@ -2,7 +2,7 @@ Operaciones = [
     {"operacion": "resta", "nombre": "operacion1", "valor1": 6.5,"valor2":3.5},
     {"operacion": "multiplicacion", "nombre": "operacion2", "valor1": 2.3,"valor2": [{"operacion": "seno","valor1":90}]},
     {"operacion": "suma", "nombre": "operacion3", "valor1": 2.3, "valor2": [{"operacion": "multiplicacion","valor1": 10, "valor2":[{"operacion": "raiz", "valor1":10, "valor2":
-    [{"operacion": "raiz", "valor1": 10,"valor2":2}]}]}]}},
+    [{"operacion": "raiz", "valor1": 10,"valor2":2}]}]}]},
 ]
 
 ConfiguracionesLex = [

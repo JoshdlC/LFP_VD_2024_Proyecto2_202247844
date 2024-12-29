@@ -10,7 +10,7 @@ function HomePage() {
   const [analysisResult, setAnalysisResult] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState('');
-  const [outputContent, setOutputContent] = useState('');
+  const [outputContent, setOutputContent] = useState(''); 
 
   const handleFileChange = (event) => {
     const selectedFile = event.target.files[0];
@@ -52,10 +52,9 @@ function HomePage() {
 
   const handleAnalyze = async () => {
     try {
-      const response = await axios.post('http://localhost:3000/analizarTexto',  { texto: fileContent });
+      const response = await axios.post('http://localhost:3000/analizarTexto');
       setAnalysisResult(response.data);
       setOutputContent((prev) => prev + '\nAnálisis completado.');
-
     } catch (error) {
       console.error('Error analyzing text:', error);
       setOutputContent((prev) => prev + '\nError al analizar el texto.');
@@ -77,6 +76,20 @@ function HomePage() {
     }
   };
 
+  const handleGenerateReports = async () => {
+    try {
+      const response = await axios.post('http://localhost:3000/generarReportes');
+      console.log(response.data);
+      setOutputContent((prev) => prev + '\nReportes generados.');
+
+    } catch (error) {
+      console.error('Error generating reports:', error);
+      setErrorMessage('Error generating reports');
+      setOutputContent((prev) => prev + '\nError al generar los reportes.');
+
+    }
+  };
+
   return (
     <main className="homepage-main">
       <div className="homepage-title">
@@ -93,9 +106,9 @@ function HomePage() {
         <button className="button" onClick={handleAnalyze}>
           Analizar
         </button>
-        <Link to="/generarReportes" className="button">
+        <button className="button" onClick={handleGenerateReports}>
           Generar Reportes
-        </Link>
+        </button>
         <button className="button" onClick={handleErrorsJson}>
           Generar Archivo Errores
         </button>

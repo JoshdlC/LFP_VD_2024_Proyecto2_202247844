@@ -59,33 +59,7 @@ let letrasTilde = [160, 130, 161, 162, 163, 181, 144, 214, 224, 233]; //? letras
 
 // Endpoint para cargar archivo
 app.post('/cargarArchivo', upload.single('file'), (req, res) => {
-    // const { rutaArchivo } = req.body;
-    // console.log(rutaArchivo)
-
-    // if (!rutaArchivo) {
-    //     return res.status(400).json({ 
-    //         error: 'La ruta del archivo no fue proporcionada. Asegúrate de enviar un campo rutaArchivo en el cuerpo de la solicitud.', 
-    //     });
-    // }
-
-    // try {
-    //     //* Leer el archivo como texto sin importar la extensión
-    //     const datos = fs.readFileSync(rutaArchivo, 'utf-8');
-
-    //     //* Guardar los datos globalmente
-    //     datosGlobalFile = datos;
-    //     datosGlobalString = datos; //* No es necesario convertir a JSON si es un texto plano.
-
-    //     res.status(200).json({ 
-    //         message: 'Archivo cargado exitosamente', 
-    //         contenido: datos 
-    //     });
-    // } catch (error) {
-    //     res.status(500).json({ 
-    //         error: 'Error al leer el archivo', 
-    //         detalles: error.message 
-    //     });
-    // }
+    
     const file = req.file;
     if (!file) {
         return res.status(400).json({ error: 'No se proporcionó ningún archivo.' });
@@ -115,6 +89,7 @@ app.post('/analizarTexto', (req, res) => {
         analizadorLexico(datosGlobalFile);
         // generarReportesHTML();
         // analizadorSintactico(textoSinErrores);
+        realizarOps();
         console.log(textoSinErrores);
         res.status(200).json({ message: 'Análisis completado', lexemas, errores });
     } catch (error) {
@@ -143,8 +118,9 @@ app.post('/realizarOperaciones', (req, res) => {
     }
 
     try {
-        const json = JSON.parse(datosGlobalFile);
+        const operacionesArray = parseOperaciones(datosGlobalFile);
 
+        procesarOperaciones(operacionesArray);
 
         // procesarOperaciones(json.operaciones);
         res.status(200).json({ message: 'Operaciones realizadas correctamente', operaciones: operacionesArray });
@@ -158,9 +134,13 @@ app.post('/generarReportes', (req, res) => {
     if (lexemas.length === 0 && errores.length === 0) {
         return res.status(400).json({ error: 'No se han realizado análisis léxicos' });
     }
-
-    generarReportesHTML();
-    res.status(200).json({ message: 'Reportes generados correctamente' });
+    try {
+    // generarReportesHTML();
+        generarReportesGraphviz();
+        res.status(200).json({ message: 'Reportes generados correctamente' });
+    } catch (error) {
+        res.status(500).json({ error: 'Error al generar reportes', detalles: error.message });
+    }
 });
 
 app.get('/', (req, res) => {
@@ -1056,128 +1036,7 @@ function verificarCaracterSiguiente(texto, contador) {
     }
 }
 
-//! FUNCION NO IMPORTANTE, SE GENERAN LAS TABLAS DESDE HOMEPAGE.JSX
-function generarReportesHTML() {
-    
-    let html = `
-        <html>
-            <head>
-                <meta charset="UTF-8">
-                <title>Reporte de análisis léxico</title>
-                <style>
-                    body {
-                        font-family: Arial, sans-serif;
-                        padding: 20px;
-                        text-align: center;
-                        background-color: #66ac63;
-                        color: #ffffff;
-                    }
-                    h1, h2 {
-                        color: #ffffff;
-                    }
-                    table {
-                        width: 100%;
-                        border-collapse: collapse;
-                        margin: 20px 0;
-                        background-color: #ffffff;
-                        color: #333333;
-                    }
-                    th, td {
-                        padding: 10px;
-                        border: 1px solid #dddddd;
-                        text-align: center;
-                    }
-                    th {
-                        background-color: #4caf50;
-                        color: white;
-                        font-weight: bold;
-                    }
-                    tr:nth-child(even) {
-                        background-color: #f2f2f2;
-                    }
-                    tr:hover {
-                        background-color: #ddd;
-                    }
-                </style>
-            </head>
-            <body style="font-family: Arial; padding: 20px; text-align: center; background-color:rgb(102, 172, 99);">
-                <h1>Reporte de análisis léxico</h1>
-                <h2>Lexemas encontrados:</h2>
-                <table border="1" style="width: 100%; text-align: center;">
-                    <tr>
-                        <th>#</th>
-                        <th>Tipo</th>
-                        <th>Valor</th>
-                        <th>Linea</th>
-                        <th>Columna</th>
-                    </tr>
-    `;
-    lexemas.forEach((lexema, index) => {
-        html += `
-            <tr>
-                <td>${index + 1}</td>
-                <td>${lexema.tipo}</td>
-                <td>${lexema.valor}</td>
-                <td>${lexema.fila}</td>
-                <td>${lexema.columna}</td>
-            </tr>
-        `;
-    });
-    html += `
-                </table>
-    `;
 
-    if (errores.length > 0) {
-        html += `
-            <h2>Errores encontrados:</h2>
-            <table border="1" style="width: 100%; text-align: center;">
-                <tr>
-                    <th>#</th>
-                    <th>Valor</th>
-                    <th>Descripción</th>
-                    <th>Fila</th>
-                    <th>Columna</th>
-                </tr>
-        `;
-        errores.forEach((error, index) => {
-            html += `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${error.valor}</td>
-                    <td>${error.descripcion}</td>
-                    <td>${error.fila}</td>
-                </tr>
-            `;
-        });
-        html += `
-            </table>
-        `;
-    } else {
-        html += `
-            <h2>No se encontraron errores.</h2>
-        `;
-    }
-
-    html += `
-            </body>
-        </html>
-    `;
-
-    // Guardamos el código HTML en un archivo
-    fs.writeFile('reporte.html', html, (error) => {
-        if (error) {
-            console.log('Error al generar el reporte HTML');
-        } else {
-            console.log()
-            console.log('Reporte HTML generado correctamente');
-            console.log()
-
-            //? Generar imagen con graphviz
-            // generarReportesGraphviz();
-            // menu();
-        }
-    });
-}
 
 function archivoErrores(){
     console.log("Generando archivo de errores...");
@@ -1203,24 +1062,141 @@ function archivoErrores(){
     archivo.end();
 }
 
-//! HAY Q MODIFICAR ESTO, NO SIRVE SOLO ASI
+function evaluarOperacion(operacion) {
+
+    // //* Revisa si los valores son operaciones anidadas, si lo son se evaluan de nuevo
+    // if (Array.isArray(operacion.valor1)) {
+    //     operacion.valor1 = evaluarOperacion(operacion.valor1[0]);
+    // }
+    // if (Array.isArray(operacion.valor2)) {
+    //     operacion.valor2 = evaluarOperacion(operacion.valor2[0]);
+    // }
+
+    let resultado;
+    switch (operacion.operacion) {  //! Se utilizan varios || para asegurarse que se esta utilizando el valor correcto
+        case 'suma':
+            resultado = operacion.valor1.resultado || operacion.valor1 + (operacion.valor2.resultado || operacion.valor2);
+            break;
+        case 'resta':
+            resultado = operacion.valor1.resultado || operacion.valor1 - (operacion.valor2.resultado || operacion.valor2);
+            break;
+        case 'multiplicacion':
+            resultado = operacion.valor1.resultado || operacion.valor1 * (operacion.valor2.resultado || operacion.valor2);
+            break;
+        case 'division':
+            resultado = operacion.valor1.resultado || operacion.valor1 / (operacion.valor2.resultado || operacion.valor2);
+            break;
+        case 'potencia':
+            resultado = Math.pow(operacion.valor1.resultado || operacion.valor1, operacion.valor2.resultado || operacion.valor2);
+            break;
+        case 'raiz':
+            resultado = Math.pow(operacion.valor1.resultado || operacion.valor1, 1 / (operacion.valor2.resultado || operacion.valor2));
+            break;
+        case 'inverso':
+            resultado = 1 / (operacion.valor1.resultado || operacion.valor1);
+            break;
+        case 'seno':
+            resultado = Math.sin((operacion.valor1.resultado || operacion.valor1)); 
+            break;
+        case 'coseno':	
+            resultado = Math.cos((operacion.valor1.resultado || operacion.valor1)); 
+            break;
+        case 'tangente':
+            resultado = Math.tan((operacion.valor1.resultado || operacion.valor1)); 
+            break;
+        case 'mod':
+            resultado = (operacion.valor1.resultado || operacion.valor1) % (operacion.valor2.resultado || operacion.valor2);
+            break;
+        default:
+            resultado = 'Operación no válida';
+    }
+    return { ...operacion, resultado:resultado.toString() };
+}
+
+
+function procesarOperaciones(operacionesArray) {+
+    // * itera sobre todas las operaciones, evaluando cada una a revision.
+    operacionesArray.forEach(operacion => {
+        operacion.valor1 = evaluarValor(operacion.valor1);
+        operacion.valor2 = evaluarValor(operacion.valor2);
+        operacion.resultado = evaluarOperacion(operacion);
+        console.log(`Operación: ${operacion.operacion}, Valor1: ${operacion.valor1}, Valor2: ${operacion.valor2}, Resultado: ${operacion.resultado}`);
+    });
+}
+
+function evaluarValor(valor) {
+    if (Array.isArray(valor)) {
+        return procesarOperaciones(valor);
+    } else {
+        return valor;
+    }
+}
+
+function realizarOps(){
+    console.log("Realizando operaciones...");
+    const data = fs.readFileSync('pruebas.nlex', 'utf8');
+    const operacionesMatch = data.match(/Operaciones\s*=\s*\[(.*?)\]/s);
+    if (operacionesMatch) {
+        const operacionesStr = operacionesMatch[1].trim();
+        const operacionesArray = parseOperaciones(operacionesStr);
+        procesarOperaciones(operacionesArray);
+    }
+    
+    console.log('Operaciones realizadas correctamente');
+    console.log('--------------------------------------');
+    console.log('Operaciones: ', operacionesArray);
+}
+
+function parseOperaciones(operacionesStr) {
+    const operacionesArray = [];
+    const operaciones = operacionesStr.split('},').map(op => op.trim() + '}');
+    operaciones.forEach(op => {
+        const operacion = parseOperacion(op);
+        operacionesArray.push(operacion);
+    });
+    return operacionesArray;
+}
+
+function parseOperacion(operacionStr) {
+    const operacion = {};
+    const regex = /(\w+):\s*([^,}]+)/g;
+    let match;
+    while ((match = regex.exec(operacionStr)) !== null) {
+        operacion[match[1]] = match[2].trim();
+    }
+    return operacion;
+}
+
+//? HAY Q MODIFICAR ESTO, NO SIRVE SOLO ASI
 function generarReportesGraphviz(){
     console.log("Generando reportes Graphviz...");
-    const json = JSON.parse(datosGlobalFile);
+    const data = fs.readFileSync('pruebas.nlex', 'utf8');
+    const configuracionesMatch = data.match(/ConfiguracionesLex\s*=\s*\[(.*?)\]/s);
+    let fondo = "#ffffff";
+    let fuenteColor = "#000000";
+    let forma = "ellipse";
+    let tipoFuente = "Arial";
 
-    const configData = json.configuraciones[0];
-    const config = new Configuraciones(configData.fondo, configData.fuente, configData.forma, configData.tipoFuente);
-    console.log('Configuraciones: ', config);
-    configuracionesArray.push(new Configuraciones(config.getFondo(), config.getFuente(), config.getForma(), config.getTipoFuente()));
+    if (configuracionesMatch) {
+        const configuracionesStr = configuracionesMatch[1].trim();
+        const configuraciones = JSON.parse(configuracionesStr.replace(/(\w+):/g, '"$1":').replace(/'/g, '"'));
+        fondo = configuraciones.fondo || fondo;
+        fuenteColor = configuraciones.fuente || fuenteColor;
+        forma = configuraciones.forma || forma;
+        tipoFuente = configuraciones.tipoFuente || tipoFuente;
+    }
 
-    let fondo = config.getFondo();
-    let fuenteColor = config.getFuente();
-    let forma = config.getForma();
+    const operacionesMatch = data.match(/Operaciones\s*=\s*\[(.*?)\]/s);
+    if (!operacionesMatch) {
+        console.log("No se encontraron operaciones.");
+        return;
+    }
 
-    console.log('Fondo: ', fondo, 'Fuente: ', fuenteColor, 'Forma: ', forma, 'Tipo de fuente: ', tipoFuente);	
-    
-    //? generar Dot file
-    let dot= ` digraph G { 
+    const operacionesStr = operacionesMatch[1].trim();
+    const operacionesArray = parseOperaciones(operacionesStr);
+    procesarOperaciones(operacionesArray);
+
+    let dot = `digraph G { 
     node [shape=${forma}];
     node [style=filled];
     node [fillcolor=${fondo}];
@@ -1228,11 +1204,9 @@ function generarReportesGraphviz(){
     node [fontname=${tipoFuente}];
     edge [color="#000000"];
     rankdir=TB;
-
     `;
 
     let nodoId = 0;
-
 
     function generarNodo(operacion) {
         const currentId = nodoId++;
@@ -1253,7 +1227,7 @@ function generarReportesGraphviz(){
             dot += `node${currentId} -> node${childId};\n`;
         }
 
-        if (operacion.valor2 !== undefined) { //! Si el valor2 no existe no genera nodo, de esa manera solo se genera un nodo hijo si no tiene valor2
+        if (operacion.valor2 !== undefined) {
             if (Array.isArray(operacion.valor2)) {
                 operacion.valor2.forEach(valor => {
                     const childId = generarNodo(valor);
@@ -1272,36 +1246,27 @@ function generarReportesGraphviz(){
         return currentId;
     }
 
-    json.operaciones.forEach(operacion => {
-        const resultado = evaluarOperacion(operacion); 
-        operacion.resultado = resultado;
+    operacionesArray.forEach(operacion => {
         generarNodo(operacion);
     });
 
     dot += `}\n`;
 
-
     fs.writeFile('grafo.dot', dot, (error) => {
-        if(error){
+        if (error) {
             console.log('Error al generar .dot');
-        }
-        else{
+        } else {
             console.log('Archivo .dot generado correctamente');
             exec('dot -Tpng grafo.dot -o grafo.png', (error) => {
-                if (error){
+                if (error) {
                     console.log('Error al generar .png');
-                    console.log(error)
+                    console.log(error);
                 } else {
                     console.log('Archivo .png generado correctamente');
-                    console.log();
-                    menu();
                 }
             });
-        } 
-    });
-
-    menu();
-    
+        }
+    });    
 }
 
 
@@ -1309,3 +1274,8 @@ function generarReportesGraphviz(){
 app.listen(port, () => {
     console.log(`Servidor iniciado en http://localhost:${port}`);
 });
+
+module.exports = {
+    realizarOps,
+    generarReportesGraphviz
+};
