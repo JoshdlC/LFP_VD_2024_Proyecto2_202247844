@@ -516,60 +516,7 @@ function analizadorSintactico(texto) {
 
         //* Si encuentra la O de Operaciones
         if (codigo === 79){
-            // //* Hasta que no encuentre la letra C de ConfiguracionesLex
-            // while (codigo !== 67) {
-            //     contador++;
-            //     codigo = texto.charCodeAt(contador);
-            //     if (codigo === 32){
-            //         contador++;
-            //     }
-            //     else if (codigo === 91){
-            //         contador++;
-            //         contadorCorchetesApertura++;
-            //     }
-            //     else if (codigo === 93){
-            //         contadorCorchetesCierre++;
-            //         contador++;
-            //     }
-                
-            //     else if (codigo === 123){
-            //         contadorLlavesApertura++;
-            //         contador++;
-            //     }
-            //     else if (codigo === 125){
-            //         contadorLlavesCierre++;
-            //         contador++;
-                    
-            //     }
-            //     else if (codigo === 44){
-            //         contadorComas++;
-            //         contador++;
-            //     }
-            //     //* Comillas dobles 
-            //     else if (codigo === 34){
-            //         let cadena = '';
-                    
-            //         contador++;
-            //         codigo = texto.charCodeAt(contador);
-            //         while (codigo !== 34) {
-            //             cadena += texto[contador];
-            //             contador++;
-            //             codigo = texto.charCodeAt(contador);
-            //         }
-            //         contador++;
-            //         codigo = texto.charCodeAt(contador);
-            //         if (codigo === 34) {
-            //             contadorComillasDobles++;
-            //         }
-            //         console.log('Cadena: ', cadena);
-            //         if (palabrasReservadas.includes(cadena)) {
-            //             continue;
-            //         } else {
-                        
-            //         }
-            //     }
-            // }
-            const palabra = texto.substring(contador, contador + 11);
+                        const palabra = texto.substring(contador, contador + 11);
             console.log(palabra)
             if (palabra === 'Operaciones') {
                 console.log("Operaciones encontradas");
@@ -592,12 +539,12 @@ function analizadorSintactico(texto) {
             if (palabra === 'ConfiguracionesLex') {
                 console.log("ConfiguracionesLex encontrada");
                 contador += 19;
-                contadorCorchetesApertura++;
+                // contadorCorchetesApertura++;
                 contador = revisarConfigs(texto, contador, 'lex'); // Actualiza el contador con el valor devuelto
             } else if (palabra === 'ConfiguracionesPar') {
                 console.log("ConfiguracionesParser encontrada");
                 contador += 22;
-                contadorCorchetesApertura++;
+                // contadorCorchetesApertura++;
                 contador = revisarConfigs(texto, contador, 'par'); // Actualiza el contador con el valor devuelto
             } else {
                 console.log("Error de sintaxis: Configuración no válida");
@@ -858,7 +805,7 @@ function revisarOperacionesSinc (texto, contador){
             contadorCorchetesApertura++;
         } else if (codigo === 93) { //* ']' en ASCII
             contador++; //? Avanza el contador después de ']'
-            contadorCorchetesCierre++;
+            // contadorCorchetesCierre++;
         } else {
             contador++;
         }
@@ -955,7 +902,7 @@ function revisarConfigs(texto, contador, tipo){
         const codNext = texto.charCodeAt(contador + 1);
         const codTres = texto.charCodeAt(contador + 2);
         if (codigo === 93) { //* ']' en ASCII
-            // contadorCorchetesCierre++;
+            contadorCorchetesCierre++;
             console.log("Corchete de cierre encontrado \n Configuraciones completadas");
             contador++;
             break;
@@ -965,8 +912,14 @@ function revisarConfigs(texto, contador, tipo){
             const palabraConfig = texto.substring(contador, contador + 5);
             if (palabraConfig.startsWith('fondo')) {
                 console.log("Fondo encontrado");
-                contador += 6; //* Avanza el contador después de 'fondo: '
-                const valor = texto.substring(contador, texto.indexOf(',', contador)).trim();
+                contador += 5; //* Avanza el contador después de 'fondo: '
+                if (texto.charCodeAt(contador) !== 58) { // Verifica si falta ':'
+                    console.log("Error de sintaxis: Falta ':' después de 'fondo'");
+                    errores.push(new Error("Falta ':' después de 'fondo'", ':', fila, columna, 'Error sintáctico'));
+                } else {
+                    contador++; // Avanza el contador después de ':'
+                }
+                const valor = extraerValor(texto, contador);
                 configuraciones.fondo = valor;
                 contador += valor.length + 1; //* Avanza el contador después del valor
                 verificarCaracterSiguiente(texto, contador);
@@ -975,8 +928,14 @@ function revisarConfigs(texto, contador, tipo){
             const palabraConfig = texto.substring(contador, contador + 6);
             if (palabraConfig.startsWith('fuente')) {
                 console.log("Fuente encontrada");
-                contador += 7; //* Avanza el contador después de 'fuente: '
-                const valor = texto.substring(contador, texto.indexOf(',', contador)).trim();
+                contador += 6; //* Avanza el contador después de 'fuente: '
+                if (texto.charCodeAt(contador) !== 58) { // Verifica si falta ':'
+                    console.log("Error de sintaxis: Falta ':' después de 'fuente'");
+                    errores.push(new Error("Falta ':' después de 'fuente'", ':', fila, columna, 'Error sintáctico'));
+                } else {
+                    contador++; // Avanza el contador después de ':'
+                }
+                const valor = extraerValor(texto, contador);
                 configuraciones.fuente = valor;
                 contador += valor.length + 1; //* Avanza el contador después del valor
                 verificarCaracterSiguiente(texto, contador);
@@ -985,8 +944,14 @@ function revisarConfigs(texto, contador, tipo){
             const palabraConfig = texto.substring(contador, contador + 5);
             if (palabraConfig.startsWith('forma')) {
                 console.log("Forma encontrada");
-                contador += 6; //* Avanza el contador después de 'forma: '
-                const valor = texto.substring(contador, texto.indexOf(',', contador)).trim();
+                contador += 5; //* Avanza el contador después de 'forma: '
+                if (texto.charCodeAt(contador) !== 58) { // Verifica si falta ':'
+                    console.log("Error de sintaxis: Falta ':' después de 'forma'");
+                    errores.push(new Error("Falta ':' después de 'forma'", ':', fila, columna, 'Error sintáctico'));
+                } else {
+                    contador++; // Avanza el contador después de ':'
+                }
+                const valor = extraerValor(texto, contador);
                 configuraciones.forma = valor;
                 contador += valor.length + 1; //* Avanza el contador después del valor
                 verificarCaracterSiguiente(texto, contador);
@@ -995,8 +960,14 @@ function revisarConfigs(texto, contador, tipo){
             const palabraConfig = texto.substring(contador, contador + 10);
             if (palabraConfig.startsWith('tipoFuente')) {
                 console.log("Tipo de Fuente encontrado");
-                contador += 11; //* Avanza el contador después de 'tipoFuente: '
-                const valor = texto.substring(contador, texto.indexOf(']', contador)).trim();
+                contador += 10; //* Avanza el contador después de 'tipoFuente: '
+                if (texto.charCodeAt(contador) !== 58) { // Verifica si falta ':'
+                    console.log("Error de sintaxis: Falta ':' después de 'tipoFuente'");
+                    errores.push(new Error("Falta ':' después de 'tipoFuente'", ':', fila, columna, 'Error sintáctico'));
+                } else {
+                    contador++; // Avanza el contador después de ':'
+                }
+                const valor = extraerValor(texto, contador);
                 configuraciones.tipoFuente = valor;
                 contador += valor.length + 1; //* Avanza el contador después del valor
                 verificarCaracterSiguiente(texto, contador);
@@ -1016,6 +987,30 @@ function revisarConfigs(texto, contador, tipo){
         configPar.push(configuraciones);
     }
     return contador;
+}
+
+
+function extraerValor(texto, contador) {
+    let valor = '';
+    if (texto.charCodeAt(contador) === 34) { // Verifica si el valor empieza con comillas dobles
+        contador++; // Avanza el contador después de la comilla de apertura
+        while (contador < texto.length && texto.charCodeAt(contador) !== 34) {
+            valor += texto[contador];
+            contador++;
+        }
+        if (texto.charCodeAt(contador) === 34) {
+            contador++; // Avanza el contador después de la comilla de cierre
+        } else {
+            console.log("Error de sintaxis: Falta una comilla de cierre");
+            errores.push(new Error('Falta una comilla de cierre', '"', fila, columna, 'Error sintáctico'));
+        }
+    } else {
+        while (contador < texto.length && texto.charCodeAt(contador) !== 44 && texto.charCodeAt(contador) !== 93) {
+            valor += texto[contador];
+            contador++;
+        }
+    }
+    return valor.trim();
 }
 
 
@@ -1124,8 +1119,10 @@ function parseOperacionesPersonalizado(operacionesStr) {
     let match;
 
     while ((match = regex.exec(operacionesStr)) !== null) {
+        console.log(`Operación encontrada: ${match[0]}`);
         const operacion = parseOperacionPersonalizada(match[0]);
         operacionesArray.push(operacion);
+        console.log('parse Operaciones', operacionesArray);
     }
 
     return operacionesArray;
@@ -1146,22 +1143,22 @@ function parseOperacionPersonalizada(operacionStr) {
         } else if (value.startsWith('{') && value.endsWith('}')) {
             value = parseOperacionPersonalizada(value.slice(1, -1));
         } else if (!isNaN(parseFloat(value))) {
-            value = parseFloat(value); //* Convierte números
+            value = parseFloat(value); // Convierte números
         } else {
-            value = value.replace(/"/g, ''); //* Remueve comillas de cadenas
+            value = value.replace(/"/g, ''); // Remueve comillas de cadenas
         }
 
-        operacion[key] = value; //* Asigna la clave y el valor al objeto
+        operacion[key] = value; // Asigna la clave y el valor al objeto
     }
 
-    //*Asignar un nombre por defecto si el valor de `nombre` está indefinido
+    // Asignar un nombre por defecto si el valor de `nombre` está indefinido
     if (!operacion.nombre) {
         operacion.nombre = 'operacion';
     }
 
     const anidada = Array.isArray(operacion.valor1) || Array.isArray(operacion.valor2);
 
-    return new Operacion(operacion.operacion, operacion.valor1, operacion.valor2, null, operacion.nombre);
+    return new Operacion(operacion.operacion, operacion.valor1, operacion.valor2, null, operacion.nombre, anidada);
 }
 
 

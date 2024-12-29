@@ -14,13 +14,5 @@
     "fila": "N/A",
     "columna": "N/A",
     "tipo": "error léxico"
-  },
-  {
-    "numero": 3,
-    "valor": "Falta(n) 2 corchete(s) de apertura",
-    "descripcion": "[",
-    "fila": "N/A",
-    "columna": "N/A",
-    "tipo": "error léxico"
   }
 ]
