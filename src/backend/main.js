@@ -1146,18 +1146,20 @@ function parseOperacionPersonalizada(operacionStr) {
         } else if (value.startsWith('{') && value.endsWith('}')) {
             value = parseOperacionPersonalizada(value.slice(1, -1));
         } else if (!isNaN(parseFloat(value))) {
-            value = parseFloat(value); // Convierte números
+            value = parseFloat(value); //* Convierte números
         } else {
-            value = value.replace(/"/g, ''); // Remueve comillas de cadenas
+            value = value.replace(/"/g, ''); //* Remueve comillas de cadenas
         }
 
-        operacion[key] = value; // Asigna la clave y el valor al objeto
+        operacion[key] = value; //* Asigna la clave y el valor al objeto
     }
 
-    // Asignar un nombre por defecto si el valor de `nombre` está indefinido
+    //*Asignar un nombre por defecto si el valor de `nombre` está indefinido
     if (!operacion.nombre) {
         operacion.nombre = 'operacion';
     }
+
+    const anidada = Array.isArray(operacion.valor1) || Array.isArray(operacion.valor2);
 
     return new Operacion(operacion.operacion, operacion.valor1, operacion.valor2, null, operacion.nombre);
 }

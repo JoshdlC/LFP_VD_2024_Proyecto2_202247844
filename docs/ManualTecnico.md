@@ -26,6 +26,9 @@ NodeLex es una aplicación web que realiza análisis léxico y sintáctico de ar
 2. **Frontend**
 
 ## Backend
+
+![backend](./imgs/backend.png)
+
 #### Variables Globales
 ```javascript
 let datosGlobalString = '';
@@ -39,6 +42,13 @@ let configLex = [];
 let configPar = [];
 let operacionesGlobal = [];
 ```
+
+#### Clases
+* configuraciones.js
+* error.js
+* lexema.js
+* main.js
+* operacion.js
 
 ### Endpoints de la API
 
@@ -153,6 +163,8 @@ El sistema soporta dos tipos de configuraciones:
 ```
 
 ## Frontend
+
+![frontend](./imgs/frontend.png)
 # Manual Técnico - Frontend NodeLex
 ## Aplicación Web con Vite + React
 
