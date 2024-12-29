@@ -6,12 +6,17 @@ digraph G {
         node [fontname="Times-Roman"];
         edge [color="#000000"];
         rankdir=TB;
-        node0 [label="resta\n 3"];
+        node0 [label="undefined\n 3"];
 node1 [label="6.5"];
 node0 -> node1;
 node2 [label="3.5"];
 node0 -> node2;
-node3 [label="seno\n 0.8939966636005579"];
+node3 [label="undefined\n 0.8939966636005579"];
 node4 [label="90"];
 node3 -> node4;
+node5 [label="undefined\n 3.1622776601683795"];
+node6 [label="10"];
+node5 -> node6;
+node7 [label="2"];
+node5 -> node7;
 }

@@ -1060,81 +1060,55 @@ function archivoErrores(){
     archivo.write(JSON.stringify(erroresConTipo, null, 2)); 
     archivo.end();
 }
-
-function evaluarOperacion(operacion) {
-    let valor1 = evaluarValor(operacion.valor1);
-    let valor2 = operacion.valor2 !== undefined ? evaluarValor(operacion.valor2) : undefined;
-
-    let resultado;
-    switch (operacion.operacion) {
-        case 'suma':
-            resultado = valor1 + valor2;
-            break;
-        case 'resta':
-            resultado = valor1 - valor2;
-            break;
-        case 'multiplicacion':
-            resultado = valor1 * valor2;
-            break;
-        case 'division':
-            resultado = valor1 / valor2;
-            break;
-        case 'potencia':
-            resultado = Math.pow(valor1, valor2);
-            break;
-        case 'raiz':
-            resultado = Math.pow(valor1, 1 / valor2);
-            break;
-        case 'seno':
-            resultado = Math.sin(valor1);
-            break;
-        case 'coseno':
-            resultado = Math.cos(valor1);
-            break;
-        case 'tangente':
-            resultado = Math.tan(valor1);
-            break;
-        case 'mod':
-            resultado = valor1 % valor2;
-            break;
-        default:
-            resultado = 'Operación no válida';
-    }
-
-    return { ...operacion, resultado };
+ 
+function evaluarOperacion(operacion){
+    return operacion.evaluar();
 }
 
 
 function procesarOperaciones(operacionesArray) {
-    operacionesGlobal = operacionesArray.map(operacion => {
+    return operacionesArray.map(operacion => {
+        // Evalúa los valores anidados antes de evaluar la operación principal
+        if (Array.isArray(operacion.valor1)) {
+            operacion.valor1 = procesarOperaciones(operacion.valor1).map(op => op.getResultado());
+        } else if (operacion.valor1 instanceof Operacion) {
+            operacion.valor1 = operacion.valor1.evaluar();
+        }
+
+        if (Array.isArray(operacion.valor2)) {
+            operacion.valor2 = procesarOperaciones(operacion.valor2).map(op => op.getResultado());
+        } else if (operacion.valor2 instanceof Operacion) {
+            operacion.valor2 = operacion.valor2.evaluar();
+        }
+
+        // Evalúa la operación
         const resultadoOperacion = evaluarOperacion(operacion);
-        console.log(`Operación: ${resultadoOperacion.operacion}, Valor1: ${resultadoOperacion.valor1}, Valor2: ${resultadoOperacion.valor2}, Resultado: ${resultadoOperacion.resultado}`);
-        return resultadoOperacion; // Agrega el resultado de la operación
+        console.log(`Operación: ${operacion.getTipo()}, Resultado: ${resultadoOperacion}`);
+        return operacion;
     });
-    return operacionesGlobal; // Retorna las operaciones procesadas
 }
 
 function evaluarValor(valor) {
     if (Array.isArray(valor)) {
-        return procesarOperaciones(valor).map(op => op.resultado); // Procesa arreglos de operaciones anidadas y retorna los resultados
-    } else if (typeof valor === 'object') {
-        return evaluarOperacion(valor).resultado; // Evalúa operaciones anidadas
+        return procesarOperaciones(valor).map(op => op.getResultado()); // Procesa arreglos de operaciones anidadas y retorna los resultados
+    } else if (valor instanceof Operacion) {
+        return valor.evaluar(); // Evalúa operaciones anidadas
     } else {
         return valor; // Retorna directamente el valor si es un número
     }
 }
 
-
 function realizarOps() {
     try {
         console.log("Realizando operaciones...");
         const data = fs.readFileSync('archivoLimpio.nlex', 'utf8');
-        const operacionesMatch = data.match(/Operaciones\s*=\s*\[(.*?)\]/s);
-
+        const operacionesMatch = data.match(/Operaciones\s*=\s*\[(.*?)\](?=\s*Configuraciones)/s);
         if (operacionesMatch) {
             const operacionesStr = operacionesMatch[1].trim();
+            console.log('Operaciones: ', operacionesStr);
             const operacionesArray = parseOperacionesPersonalizado(operacionesStr);
-            operacionesGlobal = procesarOperaciones(operacionesArray); // Guarda las operaciones procesadas
+            console.log("||||Operaciones encontradas:", operacionesArray);
+            operacionesGlobal = procesarOperaciones(operacionesArray);
             console.log("Resultados de las operaciones:", operacionesGlobal);
         } else {
             console.log("No se encontraron operaciones en el archivo.");
@@ -1150,7 +1124,7 @@ function parseOperacionesPersonalizado(operacionesStr) {
     let match;
 
     while ((match = regex.exec(operacionesStr)) !== null) {
-        const operacion = parseOperacionPersonalizada(match[0].trim());
+        const operacion = parseOperacionPersonalizada(match[0]);
         operacionesArray.push(operacion);
     }
 
@@ -1158,9 +1132,9 @@ function parseOperacionesPersonalizado(operacionesStr) {
 }
 
 function parseOperacionPersonalizada(operacionStr) {
-    const operacion = {};
     const regex = /"(\w+)":\s*(\[[^\]]*\]|\{[^}]*\}|[^,{}]+)/g; // Captura pares clave-valor, incluyendo anidados
     let match;
+    const operacion = {};
 
     while ((match = regex.exec(operacionStr)) !== null) {
         const key = match[1];
@@ -1180,8 +1154,15 @@ function parseOperacionPersonalizada(operacionStr) {
         operacion[key] = value; // Asigna la clave y el valor al objeto
     }
 
-    return operacion;
+    // Asignar un nombre por defecto si el valor de `nombre` está indefinido
+    if (!operacion.nombre) {
+        operacion.nombre = 'operacion';
+    }
+
+    return new Operacion(operacion.operacion, operacion.valor1, operacion.valor2, null, operacion.nombre);
 }
+
+
 
 
 //? Ya sirve, nomas es de mandar bien las operaciones
