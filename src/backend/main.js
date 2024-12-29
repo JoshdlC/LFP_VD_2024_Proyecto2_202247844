@@ -12,6 +12,7 @@ const Lexema = require('./lexema');
 const Error = require('./error');
 const Configuraciones = require('./configuraciones');
 const Operacion = require('./operacion');
+const { config } = require('process');
 
 // const { analizadorLexico } = require('./analizadorLexico');
 // const analizadorSintactico  = require('./analizadorSinc');
@@ -30,6 +31,19 @@ let lexemas = [];
 let errores = [];
 let operacionesArray = [];
 let textoSinErrores = '';
+let configuraciones = {};
+let configLex = [];
+let configPar = [];
+
+let contadorComas = 0;
+let contadorCorchetesCierre = 0;
+let contadorCorchetesApertura = 0;
+let contadorParentesisCierre = 0;
+let contadorParentesisApertura = 0;
+let contadorLlavesCierre = 0;
+let contadorLlavesApertura = 0;
+let contadorComillasDobles = 0;
+
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -165,9 +179,9 @@ app.post('/generarErrores', (req, res) => {
 //! Analizador léxico   
 function analizadorLexico(texto) {
     const palabrasReservadas = [
-        'operaciones', 'operacion', 'valor1', 'valor2',
-        'ConfiguracionesLex', 'texto', 'fondo', 'fuente', 'forma', 'tipoFuente', 'ConfiguracionesParser',
-        'suma', 'resta', 'potencia', 'multiplicacion', 'division', 'raiz', 'inverso', 'seno', 'coseno', 'tangente', 'mod', 'promedio', 'max', 
+        'Operaciones', 'operacion', 'valor1', 'valor2', 'nombre',
+        'ConfiguracionesLex', 'texto', 'fondo', 'fuente', 'forma', 'tipoFuente', 'ConfiguracionesParser', 
+        'suma', 'resta', 'potencia', 'multiplicacion', 'division', 'raiz', 'inverso', 'seno', 'coseno', 'tangente', 'mod', 'promedio', 'max', 'min', 'conteo', 'imprimir', 'generarReporte', 
         'red', 'blue', 'yellow', 'black', 'white', 'circle', 'box', 'diamond'
     ];
 
@@ -456,14 +470,7 @@ function analizadorSintactico(texto) {
     let contador = 0;
 
 
-    let contadorComas = 0;
-    let contadorCorchetesCierre = 0;
-    let contadorCorchetesApertura = 0;
-    let contadorParentesisCierre = 0;
-    let contadorParentesisApertura = 0;
-    let contadorLlavesCierre = 0;
-    let contadorLlavesApertura = 0;
-    let contadorComillasDobles = 0;
+    
     let tipoOperacion = ['resta', 'suma', 'multiplicacion', 'division', 'potencia', 'raiz', 'inverso', 'seno', 'coseno', 'tangente', 'mod'];
 
     operacionesFlag = false;
@@ -479,51 +486,130 @@ function analizadorSintactico(texto) {
 
     while (contador < texto.length) {
         let codigo = texto.charCodeAt(contador);
-
+        //* Si encuentra la O de Operaciones
         if (codigo === 79){
-            while (codigo !== 32) {
+            //* Hasta que no encuentre la letra C de ConfiguracionesLex
+            while (codigo !== 67) {
                 contador++;
                 codigo = texto.charCodeAt(contador);
-                continue;
+                if (codigo === 32){
+                    contador++;
+                }
+                else if (codigo === 91){
+                    contador++;
+                    contadorCorchetesApertura++;
+                }
+                else if (codigo === 93){
+                    contadorCorchetesCierre++;
+                    contador++;
+                }
+                
+                else if (codigo === 123){
+                    contadorLlavesApertura++;
+                    contador++;
+                }
+                else if (codigo === 125){
+                    contadorLlavesCierre++;
+                    contador++;
+                    
+                }
+                else if (codigo === 44){
+                    contadorComas++;
+                    contador++;
+                }
+                //* Comillas dobles 
+                else if (codigo === 34){
+                    let cadena = '';
+                    
+                    contador++;
+                    codigo = texto.charCodeAt(contador);
+                    while (codigo !== 34) {
+                        cadena += texto[contador];
+                        contador++;
+                        codigo = texto.charCodeAt(contador);
+                    }
+                    contador++;
+                    codigo = texto.charCodeAt(contador);
+                    if (codigo === 34) {
+                        contadorComillasDobles++;
+                    }
+                    console.log('Cadena: ', cadena);
+                    if (palabrasReservadas.includes(cadena)) {
+                        continue;
+                    } else {
+                        
+                    }
+                }
             }
             
         }
-        else if (codigo === 32){
-            contador++;
+
+        //* Si encuentra la C ya sea de ConfiguracionesLex o ConfiguracionesParser
+        else if (codigo === 67 ){
+            const palabra = texto.substring(contador, contador + 17);
+            if (palabra === 'ConfiguracionesLex'){
+                console.log("ConfiguracionesLex encontrada");
+                contador += 19;
+                // columna += 17;
+                contadorCorchetesApertura++;
+                revisarConfigs(texto, contador, 'lex');
+                
+            }
+            else if (palabra === 'ConfiguracionesPar'){
+                console.log("ConfiguracionesParser encontrada");
+                contador += 22;
+                contadorCorchetesApertura++;
+                revisarConfigs(texto, contador, 'par');
+            }
+            else {
+                console.log("Error de sintaxis: Configuración no válida");
+                
+            }
         }
-        else if (codigo === 91){
-            contador++;
-            contadorCorchetesApertura++;
+
+        else if (codigo === 105 || codigo === 112 || codigo === 109 || codigo === 103){
+            revisarInstr(texto, contador);
+
         }
-        else if (codigo === 93){
-            contadorCorchetesCierre++;
-            contador++;
-        }
+        //* Si encuentra (
         else if (codigo === 40){
             contadorParentesisApertura++;
             contador++;
         }
+        //* Si encuentra )
         else if (codigo === 41){
             contadorParentesisCierre++;
             contador++;
         }
+        //* Si encuentra [
+        else if (codigo === 91){
+            contador++;
+            contadorCorchetesApertura++;
+        }
+        //* Si encuentra ]
+        else if (codigo === 93){
+            contadorCorchetesCierre++;
+            contador++;
+        }
+        //* Si encuentra {
         else if (codigo === 123){
             contadorLlavesApertura++;
             contador++;
         }
+        //* Si encuentra }
         else if (codigo === 125){
             contadorLlavesCierre++;
             contador++;
             
         }
+        //* Si encuentra ,
         else if (codigo === 44){
             contadorComas++;
             contador++;
         }
-        //* Comillas dobles 
-        else if (codigo === 34){
-            contadorComillasDobles++;
-            contador++;
+
+        else {
+            console.log("Error de sintaxis: Caracter no reconocido");
         }
     }
 
@@ -565,6 +651,146 @@ function analizadorSintactico(texto) {
 
 function procesarOperaciones(operacionesArray) {
     // Implementa la lógica para evaluar operaciones y almacenar resultados en operacionesArray.
+}
+
+
+//? Revisa las instrucciones cargadas
+function revisarInstr(texto, contador){
+    console.log();
+    while (contador < texto.length) {
+        const codigo = texto.charCodeAt(contador);
+        //* Si encuentra la i de imprimir
+        if (codigo === 105) {
+            const palabra = texto.substring(contador, contador + 7);
+            if (palabra === 'imprimir') {
+                console.log("Imprimir encontrado");
+                contador += 7;
+                contadorParentesisApertura++;
+                const valor = texto.substring(contador + 1, texto.indexOf(')', contador)).trim();
+                console.log('Valor: ', valor);
+                contador += valor.length + 1;
+                contadorParentesisCierre++;
+
+            }
+        } else if (codigo === 99) { //* Si encuentra c de conteo
+            const palabra = texto.substring(contador, contador + 6);
+            if (palabra === 'conteo') {
+                console.log("Conteo encontrado");
+                contador += 7; // Avanza el contador después de 'conteo()'
+                contadorParentesisApertura++;
+                contadorParentesisCierre++;
+            }
+        } else if (codigo === 112) { //* si encuentra p de promedio
+            const palabra = texto.substring(contador, contador + 8);
+            if (palabra === 'promedio') {
+                console.log("Promedio encontrado");
+                contador += 9; //* Avanza el contador después de 'promedio'
+                contadorParentesisApertura++;
+                const valor = texto.substring(contador + 1, texto.indexOf(')', contador)).trim();
+                console.log('Valor: ', valor);
+                contador += valor.length + 2; //* Avanza el contador después del valor y ')'
+                contadorParentesisCierre++;
+
+            }
+        } else if (codigo === 109) { //* si encuentra m de max o min
+            const palabra = texto.substring(contador, contador + 3);
+            if (palabra === 'max') {
+                console.log("Max encontrado");
+                contador += 4; //* Avanza el contador después de 'max'
+                contadorParentesisApertura++;
+                const valor = texto.substring(contador + 1, texto.indexOf(')', contador)).trim();
+                console.log('Valor: ', valor);
+                contador += valor.length + 2; //* Avanza el contador después del valor y ')'
+                contadorParentesisCierre++;
+
+            } else if (palabra === 'min') {
+                console.log("Min encontrado");
+                contador += 4; //* Avanza el contador después de 'min'
+                contadorParentesisApertura++;
+                const valor = texto.substring(contador + 1, texto.indexOf(')', contador)).trim();
+                console.log('Valor: ', valor);
+                contador += valor.length + 2; //* Avanza el contador después del valor y ')'
+                contadorParentesisCierre++;
+
+            }
+        } else if (codigo === 103) { //* si encuentra g de generarReporte
+            const palabra = texto.substring(contador, contador + 13);
+            if (palabra === 'generarReporte') {
+                console.log("GenerarReporte encontrado");
+                contador += 14; //* Avanza el contador después de 'generarReporte'
+                contadorParentesisApertura++;
+                const parametros = texto.substring(contador + 1, texto.indexOf(')', contador)).split(',').map(param => param.trim());
+                console.log('Parámetros: ', parametros);
+                contador += parametros.join(', ').length + 2; //* Avanza el contador después de los parámetros y ')'
+                contadorParentesisCierre++;
+
+            }
+        } else {
+            contador++;
+        }
+    }
+}
+
+
+//? Revisa las configuraciones cargadas
+function revisarConfigs(texto, contador, tipo){
+    
+    while (contador < texto.length) {
+        const codigo = texto.charCodeAt(contador);
+        if (codigo === 93) { //* ']' en ASCII
+            contadorCorchetesCierre++;
+            break;
+        }
+        if (codigo === 102) { //* 'f' en ASCII
+            const palabraConfig = texto.substring(contador, contador + 5);
+            if (palabraConfig.startsWith('fondo')) {
+                console.log("Fondo encontrado");
+                contador += 6; //* Avanza el contador después de 'fondo: '
+                const valor = texto.substring(contador, texto.indexOf(',', contador)).trim();
+                configuraciones.fondo = valor;
+                contador += valor.length + 1; //* Avanza el contador después del valor
+            }
+        } else if (codigo === 102) { //* 'f' en ASCII
+            const palabraConfig = texto.substring(contador, contador + 6);
+            if (palabraConfig.startsWith('fuente')) {
+                console.log("Fuente encontrada");
+                contador += 7; //* Avanza el contador después de 'fuente: '
+                const valor = texto.substring(contador, texto.indexOf(',', contador)).trim();
+                configuraciones.fuente = valor;
+                contador += valor.length + 1; //* Avanza el contador después del valor
+            }
+        } else if (codigo === 102) { //* 'f' en ASCII
+            const palabraConfig = texto.substring(contador, contador + 5);
+            if (palabraConfig.startsWith('forma')) {
+                console.log("Forma encontrada");
+                contador += 6; //* Avanza el contador después de 'forma: '
+                const valor = texto.substring(contador, texto.indexOf(',', contador)).trim();
+                configuraciones.forma = valor;
+                contador += valor.length + 1; //* Avanza el contador después del valor
+            }
+        } else if (codigo === 116) { //* 't' en ASCII
+            const palabraConfig = texto.substring(contador, contador + 10);
+            if (palabraConfig.startsWith('tipoFuente')) {
+                console.log("Tipo de Fuente encontrado");
+                contador += 11; //* Avanza el contador después de 'tipoFuente: '
+                const valor = texto.substring(contador, texto.indexOf(']', contador)).trim();
+                configuraciones.tipoFuente = valor;
+                contador += valor.length + 1; //* Avanza el contador después del valor
+            }
+        } else {
+            contador++;
+        }
+    }
+    if (tipo === 'lex'){
+        configuraciones.tipo = 'lex';
+        configLex.push(configuraciones);
+
+    } else {
+        configuraciones.tipo = 'par';
+        configPar.push(configuraciones);
+    }
+     
+    return configuraciones;
 }
 
 //! FUNCION NO IMPORTANTE, SE GENERAN LAS TABLAS DESDE HOMEPAGE.JSX
@@ -712,6 +938,107 @@ function archivoErrores(){
 
     archivo.write(JSON.stringify(erroresConTipo, null, 2)); 
     archivo.end();
+}
+
+//! HAY Q MODIFICAR ESTO, NO SIRVE SOLO ASI
+function generarReportesGraphviz(){
+    console.log("Generando reportes Graphviz...");
+    const json = JSON.parse(datosGlobalFile);
+
+    const configData = json.configuraciones[0];
+    const config = new Configuraciones(configData.fondo, configData.fuente, configData.forma, configData.tipoFuente);
+    console.log('Configuraciones: ', config);
+    configuracionesArray.push(new Configuraciones(config.getFondo(), config.getFuente(), config.getForma(), config.getTipoFuente()));
+
+    let fondo = config.getFondo();
+    let fuenteColor = config.getFuente();
+    let forma = config.getForma();
+
+    console.log('Fondo: ', fondo, 'Fuente: ', fuenteColor, 'Forma: ', forma, 'Tipo de fuente: ', tipoFuente);	
+    
+    //? generar Dot file
+    let dot= ` digraph G { 
+    node [shape=${forma}];
+    node [style=filled];
+    node [fillcolor=${fondo}];
+    node [fontcolor=${fuenteColor}];
+    node [fontname=${tipoFuente}];
+    edge [color="#000000"];
+    rankdir=TB;
+
+    `;
+
+    let nodoId = 0;
+
+
+    function generarNodo(operacion) {
+        const currentId = nodoId++;
+        let label = `${operacion.operacion}\\n ${operacion.resultado}`;
+        dot += `node${currentId} [label="${label}"];\n`;
+
+        if (Array.isArray(operacion.valor1)) {
+            operacion.valor1.forEach(valor => {
+                const childId = generarNodo(valor);
+                dot += `node${currentId} -> node${childId};\n`;
+            });
+        } else if (typeof operacion.valor1 === 'object' && operacion.valor1.operacion) {
+            const childId = generarNodo(operacion.valor1);
+            dot += `node${currentId} -> node${childId};\n`;
+        } else {
+            const childId = nodoId++;
+            dot += `node${childId} [label="${operacion.valor1}"];\n`;
+            dot += `node${currentId} -> node${childId};\n`;
+        }
+
+        if (operacion.valor2 !== undefined) { //! Si el valor2 no existe no genera nodo, de esa manera solo se genera un nodo hijo si no tiene valor2
+            if (Array.isArray(operacion.valor2)) {
+                operacion.valor2.forEach(valor => {
+                    const childId = generarNodo(valor);
+                    dot += `node${currentId} -> node${childId};\n`;
+                });
+            } else if (typeof operacion.valor2 === 'object' && operacion.valor2.operacion) {
+                const childId = generarNodo(operacion.valor2);
+                dot += `node${currentId} -> node${childId};\n`;
+            } else {
+                const childId = nodoId++;
+                dot += `node${childId} [label="${operacion.valor2}"];\n`;
+                dot += `node${currentId} -> node${childId};\n`;
+            }
+        }
+
+        return currentId;
+    }
+
+    json.operaciones.forEach(operacion => {
+        const resultado = evaluarOperacion(operacion); 
+        operacion.resultado = resultado;
+        generarNodo(operacion);
+    });
+
+    dot += `}\n`;
+
+
+    fs.writeFile('grafo.dot', dot, (error) => {
+        if(error){
+            console.log('Error al generar .dot');
+        }
+        else{
+            console.log('Archivo .dot generado correctamente');
+            exec('dot -Tpng grafo.dot -o grafo.png', (error) => {
+                if (error){
+                    console.log('Error al generar .png');
+                    console.log(error)
+                } else {
+                    console.log('Archivo .png generado correctamente');
+                    console.log();
+                    menu();
+                }
+            });
+        } 
+    });
+
+    menu();
+    
 }
 
 

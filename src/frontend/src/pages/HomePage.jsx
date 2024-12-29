@@ -9,6 +9,7 @@ function HomePage() {
   const [fileContent, setFileContent] = useState('');
   const [analysisResult, setAnalysisResult] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isLoading, setIsLoading] = useState('');
   const [outputContent, setOutputContent] = useState('');
 
   const handleFileChange = (event) => {
@@ -28,6 +29,8 @@ function HomePage() {
     const formData = new FormData();
     formData.append('file', file);
 
+    setIsLoading(true);
+
     try {
       const response = await axios.post('http://localhost:3000/cargarArchivo', formData, {
         headers: {
@@ -35,8 +38,13 @@ function HomePage() {
         },
       });
       console.log(response.data);
+      setOutputContent((prev) => prev + '\nArchivo cargado exitosamente.');
+      setIsLoading(false);
     } catch (error) {
       console.error('Error uploading file:', error);
+      setErrorMessage('Error uploading file');
+      setOutputContent((prev) => prev + '\nError al cargar el archivo.');
+      setIsLoading(false);
     }
   };
 
@@ -44,8 +52,12 @@ function HomePage() {
     try {
       const response = await axios.post('http://localhost:3000/analizarTexto');
       setAnalysisResult(response.data);
+      setOutputContent((prev) => prev + '\nAnálisis completado.');
+
     } catch (error) {
       console.error('Error analyzing text:', error);
+      setOutputContent((prev) => prev + '\nError al analizar el texto.');
+      setErrorMessage('Error analyzing text');
     }
   };
 
@@ -53,9 +65,12 @@ function HomePage() {
     try {
       const response = await axios.post('http://localhost:3000/generarErrores');
       console.log(response.data);
+      setOutputContent((prev) => prev + '\nArchivo de errores generado.');
+
     } catch (error) {
       console.error('Error analyzing text:', error);
       setErrorMessage('Error generating errors JSON');
+      setOutputContent((prev) => prev + '\nError al generar el archivo de errores.');
 
     }
   };
@@ -94,7 +109,11 @@ function HomePage() {
         readOnly>
         </textarea>
         
-        <textarea name='textAreaSalida' id='textAreaSalida'
+        <textarea 
+        name='textAreaSalida' 
+        id='textAreaSalida'
+        placeholder='CMD NodeLex'
+        value={outputContent}
         disabled>
           
         </textarea>

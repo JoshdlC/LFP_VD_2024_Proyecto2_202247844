@@ -55,17 +55,22 @@
         font-size: 1rem;
         display: flex;
         justify-content: center ;
+        overflow-x: auto;
     }
 
     .homepage-textarea textarea {
-        outline: none;
-        border-color: #49ab5e;
-        width: 45%;
-        height: 85%;
-        resize: none;
-        background-color: #dedbdb;
-        padding: 1.5rem;
+      
+      outline: none;
+      border-color: #27c649;
+      width: 45%;
+      height: 85%;
+      resize: none;
+      background-color: #dedbdb;
+      padding: 1.5rem;
+      overflow-x: auto  ;
+      word-break: break-all;
 
+      
     }
 
     .homepage-analysis {
